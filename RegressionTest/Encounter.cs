@@ -11,6 +11,7 @@ namespace RegressionTest
         public DiceRoller Dice { get; set; }
         public List<BaseCharacter> Characters { get; set; }
         public int Round { get; set; }
+        public bool OutputAttacks { get; set; }
 
         private int currentId = 0;
 
@@ -30,6 +31,7 @@ namespace RegressionTest
         {
             Characters = new List<BaseCharacter>();
             Round = 1;
+            OutputAttacks = true;
         }
 
         public void Add(BaseCharacter character)
@@ -69,7 +71,7 @@ namespace RegressionTest
         public bool RunTurn()
         {
             bool result = true;
-            Console.WriteLine(string.Format("--- Encounter Round {0} --- ", Round));
+            if (OutputAttacks) Console.WriteLine(string.Format("--- Encounter Round {0} --- ", Round));
 
             for (int me = 0; me < Characters.Count; me++)
             {
@@ -104,7 +106,7 @@ namespace RegressionTest
                             string.Format("{0}hp damage, and dies!", damage);
                     }
 
-                    Console.WriteLine(string.Format("{0} [{1}hp] - {2}, {3}. {4} takes {5}",
+                    if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}hp] - {2}, {3}. {4} takes {5}",
                          Characters[me].Name,
                          Characters[me].Health,
                          attack.Desc,

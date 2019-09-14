@@ -12,9 +12,11 @@ namespace RegressionTest
         public int Number { get; set; }
         public int Modifier { get; set; }
         public DiceRoller Dice { get; set; }
+        public int CurrentAttack { get; set; }
 
-        public bool Hits(BaseCharacter target)
+        public virtual bool Hits(BaseCharacter target)
         {
+            CurrentAttack++;
             return (Dice.D20() + Modifier) >= target.AC ? true : false;
         }
 

@@ -25,12 +25,14 @@ namespace RegressionTest
         public class GlaiveAttack : BaseAttack
         {
             public bool HuntersMark { get; set; }
+            public bool DivineSmite { get; set; }
 
             public GlaiveAttack()
             {
                 Desc = "Glaive";
                 Number = 2;
                 Modifier = 7;
+                DivineSmite = false;
             }
 
             public override int Damage()
@@ -38,6 +40,16 @@ namespace RegressionTest
                 int baseDamage = Dice.D10() + 4;
                 if (HuntersMark)
                     baseDamage += Dice.D6();
+
+                if (!DivineSmite && Dice.D20() == 20)
+                {
+                    DivineSmite = true;
+                    baseDamage += (Dice.D8() + Dice.D8());
+                    if (Dice.D20() == 20)
+                    {
+                        baseDamage += Dice.D8();
+                    }
+                }
 
                 return baseDamage;
             }
@@ -62,7 +74,7 @@ namespace RegressionTest
             {
                 return new GorningHorns() { Dice = Dice };
             }
-            else if (rando > 5 && rando < 10)
+            else if (rando > 3 && rando < 10)
             {
                 return new GlaiveAttack { Dice = Dice, HuntersMark = true };
             }

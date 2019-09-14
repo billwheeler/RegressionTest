@@ -22,8 +22,12 @@ namespace RegressionTest
             Encounter enc = new Encounter { Dice = dice };
 
             enc.Add(new Tenraja { Dice = dice });
+            enc.Add(new Raelzegg { Dice = dice });
+            enc.Add(new Fionula { Dice = dice });
             enc.Add(new RandoPirate { Dice = dice, Name = "Bob Dole" });
             enc.Add(new RandoPirate { Dice = dice, Name = "Jack Kemp" });
+            enc.Add(new RandoPirate { Dice = dice, Name = "John McCain" });
+            enc.Add(new RandoPirate { Dice = dice, Name = "Gabe Newell" });
 
             enc.RollInitiative();
 

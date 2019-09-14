@@ -48,8 +48,10 @@
     <Compile Include="BaseCharacter.cs" />
     <Compile Include="DiceRoller.cs" />
     <Compile Include="Encounter.cs" />
+    <Compile Include="Fionula.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Raelzegg.cs" />
     <Compile Include="RandoPirate.cs" />
     <Compile Include="Tenraja.cs" />
   </ItemGroup>

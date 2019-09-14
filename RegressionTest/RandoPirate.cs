@@ -13,7 +13,7 @@ namespace RegressionTest
             public Scimitar()
             {
                 Desc = "Scimitar";
-                Number = 2;
+                Number = 1;
                 Modifier = 4;
             }
 
@@ -28,7 +28,7 @@ namespace RegressionTest
             public LightCrossbow()
             {
                 Desc = "Light Crossbow";
-                Number = 2;
+                Number = 1;
                 Modifier = 4;
             }
 
