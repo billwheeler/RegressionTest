@@ -43,20 +43,19 @@ namespace RegressionTest
             Name = "Rando Pirate";
             AC = 14;
             InitMod = 4;
-            Health = 28;
-            MaxHealth = 28;
+            Health = 11;
+            MaxHealth = 11;
             Group = Team.TeamTwo;
-            HealingThreshold = 13;
-            Alive = true;
+            HealingThreshold = 6;
         }
 
         public override BaseAttack PickAttack()
         {
             int rando = Dice.D10();
             if (rando < 7)
-                return new LightCrossbow { Dice = Dice };
+                return new LightCrossbow();
 
-            return new Scimitar { Dice = Dice };
+            return new Scimitar();
         }
     }
 }

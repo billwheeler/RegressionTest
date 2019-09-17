@@ -46,7 +46,6 @@ namespace RegressionTest
             MaxHealth = 31;
             HealingThreshold = 11;
             Group = Team.TeamOne;
-            Alive = true;
         }
 
         public override BaseAttack PickAttack()
@@ -54,11 +53,11 @@ namespace RegressionTest
             int rando = Dice.D10();
             if (rando == 10)
             {
-                return new Witchbolt() { Dice = Dice };
+                return new Witchbolt();
             }
             else
             {
-                return new EldritchBlast { Dice = Dice, };
+                return new EldritchBlast();
             }
         }
     }

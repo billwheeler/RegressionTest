@@ -8,12 +8,7 @@ namespace RegressionTest
 {
     public class DiceRoller
     {
-        protected Random Rnd { get; set; }
-
-        public DiceRoller()
-        {
-            Rnd = new Random();
-        }
+        protected Random Rnd { get; set; } = new Random(DateTime.Now.Millisecond);
 
         public int D4() { return Rnd.Next(1, 4); }
         public int D6() { return Rnd.Next(1, 6); }

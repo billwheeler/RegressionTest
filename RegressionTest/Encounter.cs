@@ -12,6 +12,8 @@ namespace RegressionTest
         public List<BaseCharacter> Characters { get; set; }
         public int Round { get; set; }
         public bool OutputAttacks { get; set; }
+        public TeamStats Players { get; set; }
+        public TeamStats Baddies { get; set; }
 
         private int currentId = 0;
 
@@ -32,6 +34,18 @@ namespace RegressionTest
             Characters = new List<BaseCharacter>();
             Round = 1;
             OutputAttacks = true;
+
+            Players = new TeamStats
+            {
+                Name = "Players",
+                Group = Team.TeamOne
+            };
+
+            Baddies = new TeamStats
+            {
+                Name = "Baddies",
+                Group = Team.TeamTwo
+            };
         }
 
         public void Add(BaseCharacter character)
@@ -43,13 +57,22 @@ namespace RegressionTest
 
         public void RollInitiative()
         {
-            Characters = Characters.Select(c => { c.Initiative = Dice.D20() + c.InitMod; return c; }).ToList();
+            Round = 1;
+            Characters = Characters.Select(c => { c.RollInitiative(); return c; }).ToList();
             Characters.Sort(new InitSort());
+
+            Players.Encounters++;
+            Baddies.Encounters++;
         }
 
         public List<BaseCharacter> CurrentEnemies(Team group)
         {
             return Characters.Where(c => c.Group != group && c.Alive).ToList();
+        }
+
+        public List<BaseCharacter> TeamMembers(Team group)
+        {
+            return Characters.Where(c => c.Group != group).ToList();
         }
 
         public int PickEnemy(Team group)
@@ -85,21 +108,24 @@ namespace RegressionTest
                     break;
                 }
 
+                Characters[me].Stats.Rounds++;
+
                 BaseAttack attack = Characters[me].PickAttack();
 
                 for (int i = 0; i < attack.Number; i++)
                 {
                     bool hits = attack.Hits(Characters[enemy]);
-                    Characters[me].Attacks++;
+                    Characters[me].Stats.Attacks++;
                     int damage = 0;
                     bool survives = true;
                     string description = "no damage.";
 
                     if (hits)
                     {
-                        Characters[me].Hits++;
+                        Characters[me].Stats.Hits++;
                         damage = attack.Damage();
-                        Characters[me].DamageGiven += damage;
+                        Characters[me].Stats.DamageGiven += damage;
+                        Characters[enemy].Stats.DamageTaken += damage;
                         survives = Characters[enemy].TakeDamage(damage);
                         description = survives ?
                             string.Format("{0}hp damage.", damage) :
@@ -117,6 +143,7 @@ namespace RegressionTest
 
                     if (!survives)
                     {
+                        Characters[enemy].Stats.Deaths++;
                         enemy = PickEnemy(Characters[me].Group);
                         if (enemy == -1)
                         {
@@ -132,6 +159,47 @@ namespace RegressionTest
 
             Round++;
             return result;
+        }
+
+        public void PostEncounter()
+        {
+            if (CurrentEnemies(Team.TeamTwo).Count > 0)
+                Baddies.Wins++;
+            else
+                Players.Wins++;
+
+
+            var pcs = Characters.Where(c => c.Group == Players.Group).ToList();
+            foreach (BaseCharacter c in pcs)
+            {
+                Players.TotalDPR += c.Stats.DPR;
+            }
+
+            var bads = Characters.Where(c => c.Group == Baddies.Group).ToList();
+            foreach (BaseCharacter c in bads)
+            {
+                Baddies.TotalDPR += c.Stats.DPR;
+            }
+        }
+
+        public override string ToString()
+        {
+            string output = string.Empty;
+
+            foreach (BaseCharacter c in Characters)
+            {
+                output += string.Format("{0} - DPR: {1}hp, Accuracy: {2}%, Mortality: {3}%\n",
+                    c.Name, 
+                    c.Stats.DPR.ToString("0.##"),
+                    c.Stats.Accuracy.ToString("0.##"),
+                    c.Stats.Mortality.ToString("0.##")
+                );
+            }
+
+            output += Players.ToString();
+            output += Baddies.ToString();
+
+            return output;
         }
     }
 }

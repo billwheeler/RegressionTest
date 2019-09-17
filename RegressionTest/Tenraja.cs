@@ -59,12 +59,10 @@ namespace RegressionTest
         {
             Name = "Tenraja";
             AC = 16;
-            InitMod = 0;
             Health = 44;
             MaxHealth = 44;
             HealingThreshold = 15;
             Group = Team.TeamOne;
-            Alive = true;
         }
 
         public override BaseAttack PickAttack()

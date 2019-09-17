@@ -8,24 +8,35 @@ namespace RegressionTest
 {
     public abstract class BaseCharacter
     {
-        public int ID { get; set; }
+        public int ID { get; set; } = 0;
         public string Name { get; set; }
-        public int AC { get; set; }
-        public int InitMod { get; set; }
-        public int Initiative { get; set; }
-        public int HealingThreshold { get; set; }
-        public int Health { get; set; }
-        public int MaxHealth { get; set; }
-        public DiceRoller Dice { get; set; }
-        public bool Alive { get; set; }
+        public int AC { get; set; } = 10;
+        public int InitMod { get; set; } = 0;
+        public int Initiative { get; set; } = 0;
+        public int HealingThreshold { get; set; } = 0;
+        public int Health { get; set; } = 5;
+        public int MaxHealth { get; set; } = 5;
+        public bool Alive { get; set; } = true;
         public Team Group { get; set; }
 
-        public int Attacks = 0;
-        public int Hits = 0;
-        public int DamageGiven = 0;
-        public int DamageTaken = 0;
+        public DiceRoller Dice { get; set; } = new DiceRoller();
+        public CharacterStats Stats { get; set; } = new CharacterStats();
 
         public abstract BaseAttack PickAttack();
+
+        public virtual void Init()
+        {
+            Initiative = 0;
+            Health = MaxHealth;
+            Alive = true;
+        }
+
+        public void RollInitiative()
+        {
+            Init();
+            Initiative = Dice.D20() + InitMod;
+            Stats.Encounters++;
+        }
 
         public bool NeedsHealing()
         {

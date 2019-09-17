@@ -19,22 +19,26 @@ namespace RegressionTest
         static void Main(string[] args)
         {
             DiceRoller dice = new DiceRoller();
-            Encounter enc = new Encounter { Dice = dice };
+            Encounter enc = new Encounter { OutputAttacks = false };
 
-            enc.Add(new Tenraja { Dice = dice });
-            enc.Add(new Raelzegg { Dice = dice });
-            enc.Add(new Fionula { Dice = dice });
-            enc.Add(new RandoPirate { Dice = dice, Name = "Bob Dole" });
-            enc.Add(new RandoPirate { Dice = dice, Name = "Jack Kemp" });
-            enc.Add(new RandoPirate { Dice = dice, Name = "John McCain" });
-            enc.Add(new RandoPirate { Dice = dice, Name = "Gabe Newell" });
+            enc.Add(new Tenraja());
+            enc.Add(new Raelzegg());
+            enc.Add(new Fionula());
+            enc.Add(new RandoPirate { Name = "Radclyf" });
+            enc.Add(new RandoPirate { Name = "Telfour" });
+            enc.Add(new Kaygrun());
+            enc.Add(new MawDemon());
 
-            enc.RollInitiative();
-
-            while (enc.RunTurn())
+            for (int i = 0; i < 80000; i++)
             {
+                enc.RollInitiative();
+                while (enc.RunTurn())
+                {
+                }
+                enc.PostEncounter();
             }
 
+            Console.WriteLine(enc.ToString());
             Console.ReadLine();
         }
     }

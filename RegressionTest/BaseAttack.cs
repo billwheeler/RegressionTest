@@ -9,10 +9,10 @@ namespace RegressionTest
     public abstract class BaseAttack
     {
         public string Desc { get; set; }
-        public int Number { get; set; }
-        public int Modifier { get; set; }
-        public DiceRoller Dice { get; set; }
-        public int CurrentAttack { get; set; }
+        public int Number { get; set; } = 1;
+        public int Modifier { get; set; } = 0;
+        public DiceRoller Dice { get; set; } = new DiceRoller();
+        public int CurrentAttack { get; set; } = 0;
 
         public virtual bool Hits(BaseCharacter target)
         {

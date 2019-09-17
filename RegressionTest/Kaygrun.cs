@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RegressionTest
 {
-    public class Raelzegg : BaseCharacter
+    public class Kaygrun : BaseCharacter
     {
         public class Swashbuckler : BaseAttack
         {
@@ -15,33 +15,22 @@ namespace RegressionTest
 
             public Swashbuckler()
             {
-                Desc = "Rapier";
-                Modifier = 7;
+                Desc = "Shortsword";
+                Modifier = 4;
                 Number = 2;
                 FirstAttack = true;
                 HadSneakAttack = false;
             }
 
-            public override bool Hits(BaseCharacter target)
-            {
-                bool hits = base.Hits(target);
-                if (CurrentAttack > 1)
-                    Desc = "Dagger";
-
-                return hits;
-            }
-
             public override int Damage()
             {
-                int damage = CurrentAttack == 1 ?
-                    Dice.D8() + 4 :
-                    Dice.D4();
+                int damage = Dice.D6() + 4;
 
                 if (!HadSneakAttack)
                 {
                     if (Dice.D10() < 10)
                     {
-                        damage += (Dice.D6() + Dice.D6() + Dice.D6());
+                        damage += (Dice.D6() + Dice.D6());
                         HadSneakAttack = true;
                     }
                 }
@@ -50,15 +39,15 @@ namespace RegressionTest
             }
         }
 
-        public Raelzegg()
+        public Kaygrun()
         {
-            Name = "Raelzegg";
-            AC = 17;
-            InitMod = 6;
-            Health = 43;
-            MaxHealth = 43;
-            HealingThreshold = 15;
-            Group = Team.TeamOne;
+            Name = "Kaygrun";
+            AC = 15;
+            InitMod = 3;
+            Health = 28;
+            MaxHealth = 28;
+            HealingThreshold = 13;
+            Group = Team.TeamTwo;
         }
 
         public override BaseAttack PickAttack()
