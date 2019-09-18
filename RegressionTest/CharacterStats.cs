@@ -41,6 +41,21 @@ namespace RegressionTest
         }
     }
 
+    public class EncounterStats
+    {
+        public int Encounters { get; set; } = 0;
+        public int Rounds { get; set; } = 0;
+
+        public float AverageRounds
+        {
+            get
+            {
+                return (float)Rounds / (float)Encounters;
+            }
+        }
+
+    }
+
     public class TeamStats
     {
         public Team Group { get; set; }
@@ -69,8 +84,8 @@ namespace RegressionTest
         {
             string output = string.Empty;
 
-            output = string.Format("{0} - DPR: {1}hp, Wins: {2}% \n",
-                Name, AverageDPR.ToString("#.##"), Success.ToString("#.##")
+            output = string.Format("{0} - DPR: {1:0.00}hp, Wins: {2:0.00}% \n",
+                Name, AverageDPR, Success
             );
 
             return output;

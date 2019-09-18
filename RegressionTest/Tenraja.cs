@@ -63,6 +63,7 @@ namespace RegressionTest
             MaxHealth = 44;
             HealingThreshold = 15;
             Group = Team.TeamOne;
+            Healer = true;
         }
 
         public override BaseAttack PickAttack()

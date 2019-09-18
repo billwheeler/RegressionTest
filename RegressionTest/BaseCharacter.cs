@@ -17,6 +17,7 @@ namespace RegressionTest
         public int Health { get; set; } = 5;
         public int MaxHealth { get; set; } = 5;
         public bool Alive { get; set; } = true;
+        public bool Healer { get; set; } = false;
         public Team Group { get; set; }
 
         public DiceRoller Dice { get; set; } = new DiceRoller();

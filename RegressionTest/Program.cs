@@ -24,15 +24,21 @@ namespace RegressionTest
             enc.Add(new Tenraja());
             enc.Add(new Raelzegg());
             enc.Add(new Fionula());
+            enc.Add(new Malbraxys());
+            enc.Add(new Sulyman());
+
             enc.Add(new RandoPirate { Name = "Radclyf" });
             enc.Add(new RandoPirate { Name = "Telfour" });
             enc.Add(new Kaygrun());
+            enc.Add(new Karrius());
+            enc.Add(new Haltran());
+            enc.Add(new Rosara());
             enc.Add(new MawDemon());
 
             for (int i = 0; i < 80000; i++)
             {
                 enc.RollInitiative();
-                while (enc.RunTurn())
+                while (enc.ProcessRound())
                 {
                 }
                 enc.PostEncounter();

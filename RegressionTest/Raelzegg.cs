@@ -10,16 +10,13 @@ namespace RegressionTest
     {
         public class Swashbuckler : BaseAttack
         {
-            public bool FirstAttack { get; set; }
-            public bool HadSneakAttack { get; set; }
+            public bool HadSneakAttack { get; set; } = false;
 
             public Swashbuckler()
             {
                 Desc = "Rapier";
                 Modifier = 7;
                 Number = 2;
-                FirstAttack = true;
-                HadSneakAttack = false;
             }
 
             public override bool Hits(BaseCharacter target)

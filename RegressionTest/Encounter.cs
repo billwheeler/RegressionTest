@@ -14,6 +14,7 @@ namespace RegressionTest
         public bool OutputAttacks { get; set; }
         public TeamStats Players { get; set; }
         public TeamStats Baddies { get; set; }
+        public EncounterStats Stats { get; set; }
 
         private int currentId = 0;
 
@@ -46,6 +47,8 @@ namespace RegressionTest
                 Name = "Baddies",
                 Group = Team.TeamTwo
             };
+
+            Stats = new EncounterStats();
         }
 
         public void Add(BaseCharacter character)
@@ -72,7 +75,7 @@ namespace RegressionTest
 
         public List<BaseCharacter> TeamMembers(Team group)
         {
-            return Characters.Where(c => c.Group != group).ToList();
+            return Characters.Where(c => c.Group == group).ToList();
         }
 
         public int PickEnemy(Team group)
@@ -91,7 +94,7 @@ namespace RegressionTest
             return -1;
         }
 
-        public bool RunTurn()
+        public bool ProcessRound()
         {
             bool result = true;
             if (OutputAttacks) Console.WriteLine(string.Format("--- Encounter Round {0} --- ", Round));
@@ -163,7 +166,7 @@ namespace RegressionTest
 
         public void PostEncounter()
         {
-            if (CurrentEnemies(Team.TeamTwo).Count > 0)
+            if (CurrentEnemies(Team.TeamOne).Count > 0)
                 Baddies.Wins++;
             else
                 Players.Wins++;
@@ -172,13 +175,13 @@ namespace RegressionTest
             var pcs = Characters.Where(c => c.Group == Players.Group).ToList();
             foreach (BaseCharacter c in pcs)
             {
-                Players.TotalDPR += c.Stats.DPR;
+                if (c.Stats.DPR > 0) Players.TotalDPR += c.Stats.DPR;
             }
 
             var bads = Characters.Where(c => c.Group == Baddies.Group).ToList();
             foreach (BaseCharacter c in bads)
             {
-                Baddies.TotalDPR += c.Stats.DPR;
+                if (c.Stats.DPR > 0) Baddies.TotalDPR += c.Stats.DPR;
             }
         }
 
@@ -188,13 +191,15 @@ namespace RegressionTest
 
             foreach (BaseCharacter c in Characters)
             {
-                output += string.Format("{0} - DPR: {1}hp, Accuracy: {2}%, Mortality: {3}%\n",
+                output += string.Format("{0} - DPR: {1}hp, Accuracy: {2}%, Mortality: {3}% \n",
                     c.Name, 
                     c.Stats.DPR.ToString("0.##"),
                     c.Stats.Accuracy.ToString("0.##"),
                     c.Stats.Mortality.ToString("0.##")
                 );
             }
+
+            output += "\n";
 
             output += Players.ToString();
             output += Baddies.ToString();
