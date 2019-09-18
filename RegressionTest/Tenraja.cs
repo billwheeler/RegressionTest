@@ -64,6 +64,7 @@ namespace RegressionTest
             HealingThreshold = 15;
             Group = Team.TeamOne;
             Healer = true;
+            Priority = HealPriority.Medium;
         }
 
         public override BaseAttack PickAttack()
@@ -79,6 +80,23 @@ namespace RegressionTest
             }
 
             return new GlaiveAttack { Dice = Dice, HuntersMark = false };
+        }
+
+        public override int HealAmount(HealPriority priority)
+        {
+            Random rnd = new Random();
+
+            switch (priority)
+            {
+                case HealPriority.High:
+                    return rnd.Next(8, 12);
+                case HealPriority.Medium:
+                    return rnd.Next(5, 10);
+                case HealPriority.Low:
+                    return rnd.Next(2, 5);
+            }
+
+            return base.HealAmount(priority);
         }
     }
 }

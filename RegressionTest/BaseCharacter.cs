@@ -19,6 +19,7 @@ namespace RegressionTest
         public bool Alive { get; set; } = true;
         public bool Healer { get; set; } = false;
         public Team Group { get; set; }
+        public HealPriority Priority { get; set; } = HealPriority.Dont;
 
         public DiceRoller Dice { get; set; } = new DiceRoller();
         public CharacterStats Stats { get; set; } = new CharacterStats();
@@ -39,9 +40,12 @@ namespace RegressionTest
             Stats.Encounters++;
         }
 
-        public bool NeedsHealing()
+        public bool NeedsHealing
         {
-            return Health < HealingThreshold;
+            get
+            {
+                return Health < HealingThreshold;
+            }
         }
 
         public bool TakeDamage(int amount)
@@ -63,6 +67,11 @@ namespace RegressionTest
             Health += amount;
             if (Health > MaxHealth)
                 Health = MaxHealth;
+        }
+
+        public virtual int HealAmount(HealPriority priority)
+        {
+            return 0;
         }
     }
 }

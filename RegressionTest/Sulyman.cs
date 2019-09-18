@@ -58,6 +58,7 @@ namespace RegressionTest
             MaxHealth = 43;
             Group = Team.TeamOne;
             Healer = true;
+            Priority = HealPriority.High;
         }
 
         public override BaseAttack PickAttack()
@@ -67,6 +68,13 @@ namespace RegressionTest
                 return new TollOfTheDeadSpirit();
 
             return new TollOfTheDead();
+        }
+
+        public override int HealAmount(HealPriority priority)
+        {
+            if (Dice.D10() < 3)
+                return Dice.D4() + Dice.D4() + 4;
+            return Dice.D4() + 4;
         }
     }
 }

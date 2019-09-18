@@ -31,6 +31,7 @@ namespace RegressionTest
             Health = 30;
             MaxHealth = 30;
             Group = Team.TeamTwo;
+            Priority = HealPriority.Medium;
         }
 
         public override BaseAttack PickAttack()

@@ -15,6 +15,7 @@ namespace RegressionTest
         public TeamStats Players { get; set; }
         public TeamStats Baddies { get; set; }
         public EncounterStats Stats { get; set; }
+        public bool AllowHealing { get; set; }
 
         private int currentId = 0;
 
@@ -35,6 +36,7 @@ namespace RegressionTest
             Characters = new List<BaseCharacter>();
             Round = 1;
             OutputAttacks = true;
+            AllowHealing = true;
 
             Players = new TeamStats
             {
@@ -94,6 +96,21 @@ namespace RegressionTest
             return -1;
         }
 
+        public int PickHealTarget(Team group)
+        {
+            BaseCharacter target = Characters.Where(c => c.Group == group && c.Alive && c.NeedsHealing).OrderByDescending(c => c.Priority).FirstOrDefault();
+            if (target != null)
+            {
+                for (int i = 0; i < Characters.Count; i++)
+                {
+                    if (Characters[i].ID == target.ID)
+                        return i;
+                }
+            }
+
+            return -1;
+        }
+
         public bool ProcessRound()
         {
             bool result = true;
@@ -109,6 +126,31 @@ namespace RegressionTest
                 {
                     result = false;
                     break;
+                }
+
+                if (AllowHealing && Characters[me].Healer)
+                {
+                    int target = PickHealTarget(Characters[me].Group);
+                    if (target > -1)
+                    {
+                        int amount = Characters[me].HealAmount(Characters[target].Priority);
+                        Characters[target].Heal(amount);
+                        Characters[me].Stats.Healed += amount;
+
+                        if (Characters[me].Group == Team.TeamOne)
+                            Players.TotalHealing += amount;
+                        else if (Characters[me].Group == Team.TeamTwo)
+                            Baddies.TotalHealing += amount;
+
+                        if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}hp] heals {2} for {3}hp.",
+                            Characters[me].Name,
+                            Characters[me].Health,
+                            Characters[target].Name, 
+                            amount
+                        ));
+
+                        break;
+                    }
                 }
 
                 Characters[me].Stats.Rounds++;
@@ -160,6 +202,8 @@ namespace RegressionTest
             if (CurrentEnemies(Team.TeamOne).Count == 0 || CurrentEnemies(Team.TeamTwo).Count == 0)
                 result = false;
 
+            if (OutputAttacks && !result) Console.WriteLine(string.Empty);
+
             Round++;
             return result;
         }
@@ -185,7 +229,7 @@ namespace RegressionTest
             }
         }
 
-        public override string ToString()
+        public string Output()
         {
             string output = string.Empty;
 
@@ -201,8 +245,8 @@ namespace RegressionTest
 
             output += "\n";
 
-            output += Players.ToString();
-            output += Baddies.ToString();
+            output += Players.Output(AllowHealing);
+            output += Baddies.Output(AllowHealing);
 
             return output;
         }

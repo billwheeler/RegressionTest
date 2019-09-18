@@ -15,6 +15,7 @@ namespace RegressionTest
         public int Rounds { get; set; } = 0;
         public int Encounters { get; set; } = 0;
         public int Deaths { get; set; } = 0;
+        public int Healed { get; set; } = 0;
 
         public float DPR
         {
@@ -53,7 +54,6 @@ namespace RegressionTest
                 return (float)Rounds / (float)Encounters;
             }
         }
-
     }
 
     public class TeamStats
@@ -63,12 +63,21 @@ namespace RegressionTest
         public int Encounters { get; set; } = 0;
         public int Wins { get; set; } = 0;
         public float TotalDPR { get; set; }
+        public int TotalHealing { get; set; }
 
         public float AverageDPR
         {
             get
             {
                 return (float)TotalDPR / (float)Encounters;
+            }
+        }
+
+        public float AverageHealing
+        {
+            get
+            {
+                return (float)TotalHealing / (float)Encounters;
             }
         }
 
@@ -80,13 +89,22 @@ namespace RegressionTest
             }
         }
 
-        public override string ToString()
+        public string Output(bool showHealing = true)
         {
             string output = string.Empty;
 
-            output = string.Format("{0} - DPR: {1:0.00}hp, Wins: {2:0.00}% \n",
-                Name, AverageDPR, Success
-            );
+            if (showHealing)
+            {
+                output = string.Format("{0} - DPR: {1:0.00}hp, HPE: {2:0.00}hp, Wins: {3:0.00}% \n",
+                    Name, AverageDPR, AverageHealing, Success
+                );
+            }
+            else
+            {
+                output = string.Format("{0} - DPR: {1:0.00}hp, Wins: {2:0.00}% \n",
+                    Name, AverageDPR, Success
+                );
+            }
 
             return output;
         }

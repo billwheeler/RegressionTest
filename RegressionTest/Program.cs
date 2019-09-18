@@ -14,12 +14,20 @@ namespace RegressionTest
         TeamFour = 4
     }
 
+    public enum HealPriority
+    {
+        Dont = 0,
+        Low = 1,
+        Medium = 2,
+        High = 3
+    }
+
     class Program
     {
         static void Main(string[] args)
         {
             DiceRoller dice = new DiceRoller();
-            Encounter enc = new Encounter { OutputAttacks = false };
+            Encounter enc = new Encounter { OutputAttacks = false, AllowHealing = true };
 
             enc.Add(new Tenraja());
             enc.Add(new Raelzegg());
@@ -38,13 +46,11 @@ namespace RegressionTest
             for (int i = 0; i < 80000; i++)
             {
                 enc.RollInitiative();
-                while (enc.ProcessRound())
-                {
-                }
+                while (enc.ProcessRound()) { }
                 enc.PostEncounter();
             }
 
-            Console.WriteLine(enc.ToString());
+            Console.WriteLine(enc.Output());
             Console.ReadLine();
         }
     }
