@@ -44,6 +44,12 @@ namespace RegressionTest
         {
             get
             {
+                if (Alive == false)
+                    return false;
+
+                if (Priority == HealPriority.Dont)
+                    return false;
+
                 return Health < HealingThreshold;
             }
         }

@@ -13,11 +13,19 @@ namespace RegressionTest
         public int Modifier { get; set; } = 0;
         public DiceRoller Dice { get; set; } = new DiceRoller();
         public int CurrentAttack { get; set; } = 0;
+        public bool CriticalHit { get; set; } = false;
+        public int CriticalThreshold { get; set; } = 20;
 
         public virtual bool Hits(BaseCharacter target)
         {
+            CriticalHit = false;
             CurrentAttack++;
-            return (Dice.D20() + Modifier) >= target.AC ? true : false;
+            int roll = Dice.D20();
+
+            if (roll >= CriticalThreshold)
+                CriticalHit = true;
+
+            return (roll + Modifier) >= target.AC ? true : false;
         }
 
         public abstract int Damage();

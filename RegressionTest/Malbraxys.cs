@@ -18,6 +18,9 @@ namespace RegressionTest
 
             public override int Damage()
             {
+                if (CriticalHit)
+                    return Dice.D8() + Dice.D8() + 3;
+
                 return Dice.D8() + 3;
             }
         }
@@ -32,6 +35,9 @@ namespace RegressionTest
 
             public override int Damage()
             {
+                if (CriticalHit)
+                    return Dice.D8() + Dice.D8() + 3 + Dice.D10() + Dice.D10();
+
                 return Dice.D8() + 3 + Dice.D10();
             }
         }
@@ -56,11 +62,19 @@ namespace RegressionTest
 
             public override int Damage()
             {
-                int damage = CurrentAttack == 1 ?
-                    Dice.D8() :
-                    Dice.D4();
+                if (CurrentAttack == 1)
+                {
+                    if (CriticalHit)
+                        return Dice.D8() + Dice.D8() + 3;
+                    return Dice.D8() + 3;
+                }
+                else
+                {
+                    if (CriticalHit)
+                        return Dice.D4() + Dice.D4() + 3;
+                    return Dice.D4() + 3;
 
-                return damage + 3;
+                }
             }
         }
 
@@ -74,6 +88,9 @@ namespace RegressionTest
 
             public override int Damage()
             {
+                if (CriticalHit)
+                    return Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6();
+
                 return Dice.D6() + Dice.D6();
             }
         }
@@ -88,6 +105,9 @@ namespace RegressionTest
 
             public override int Damage()
             {
+                if (CriticalHit)
+                    return Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6();
+
                 return Dice.D6() + Dice.D6() + Dice.D6();
             }
         }
@@ -99,6 +119,7 @@ namespace RegressionTest
             InitMod = 3;
             Health = 35;
             MaxHealth = 35;
+            HealingThreshold = 18;
             Group = Team.TeamOne;
             Priority = HealPriority.Medium;
         }

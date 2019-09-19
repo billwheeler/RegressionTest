@@ -30,15 +30,26 @@ namespace RegressionTest
 
             public override int Damage()
             {
-                int damage = CurrentAttack == 1 ?
-                    Dice.D8() + 4 :
-                    Dice.D4();
+                int damage = 0;
+
+                if (CurrentAttack == 1)
+                {
+                    damage += Dice.D8() + 4;
+                    if (CriticalHit) damage += Dice.D8();
+                }
+                else
+                {
+                    damage += Dice.D4();
+                    if (CriticalHit) damage += Dice.D4();
+
+                }
 
                 if (!HadSneakAttack)
                 {
                     if (Dice.D10() < 10)
                     {
                         damage += (Dice.D6() + Dice.D6() + Dice.D6());
+                        if (CriticalHit) damage += (Dice.D6() + Dice.D6() + Dice.D6());
                         HadSneakAttack = true;
                     }
                 }

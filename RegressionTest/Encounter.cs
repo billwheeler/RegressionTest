@@ -98,7 +98,7 @@ namespace RegressionTest
 
         public int PickHealTarget(Team group)
         {
-            BaseCharacter target = Characters.Where(c => c.Group == group && c.Alive && c.NeedsHealing).OrderByDescending(c => c.Priority).FirstOrDefault();
+            BaseCharacter target = Characters.Where(c => c.Group == group && c.NeedsHealing).OrderByDescending(c => c.Priority).FirstOrDefault();
             if (target != null)
             {
                 for (int i = 0; i < Characters.Count; i++)
@@ -119,7 +119,9 @@ namespace RegressionTest
             for (int me = 0; me < Characters.Count; me++)
             {
                 if (!Characters[me].Alive)
+                {
                     continue;
+                }
 
                 int enemy = PickEnemy(Characters[me].Group);
                 if (enemy == -1)
@@ -127,6 +129,8 @@ namespace RegressionTest
                     result = false;
                     break;
                 }
+
+                Characters[me].Stats.Rounds++;
 
                 if (AllowHealing && Characters[me].Healer)
                 {
@@ -152,8 +156,6 @@ namespace RegressionTest
                         break;
                     }
                 }
-
-                Characters[me].Stats.Rounds++;
 
                 BaseAttack attack = Characters[me].PickAttack();
 
@@ -181,7 +183,7 @@ namespace RegressionTest
                          Characters[me].Name,
                          Characters[me].Health,
                          attack.Desc,
-                         hits ? "hits" : "misses",
+                         hits ? (attack.CriticalHit ? "critical hit" : "hits") : "misses",
                          Characters[enemy].Name,
                          description
                     ));
@@ -205,6 +207,9 @@ namespace RegressionTest
             if (OutputAttacks && !result) Console.WriteLine(string.Empty);
 
             Round++;
+            Players.Rounds++;
+            Baddies.Rounds++;
+
             return result;
         }
 
@@ -233,13 +238,14 @@ namespace RegressionTest
         {
             string output = string.Empty;
 
-            foreach (BaseCharacter c in Characters)
+            foreach (BaseCharacter c in Characters.OrderBy(c => c.Name))
             {
-                output += string.Format("{0} - DPR: {1}hp, Accuracy: {2}%, Mortality: {3}% \n",
+                output += string.Format("{0} - DPR: {1}hp, Accuracy: {2}%, Mortality: {3}%, ATE: {4} \n",
                     c.Name, 
                     c.Stats.DPR.ToString("0.##"),
                     c.Stats.Accuracy.ToString("0.##"),
-                    c.Stats.Mortality.ToString("0.##")
+                    c.Stats.Mortality.ToString("0.##"),
+                    c.Stats.AverageRoundsActed.ToString("0.##")
                 );
             }
 

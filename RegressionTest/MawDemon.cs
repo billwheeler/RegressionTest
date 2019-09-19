@@ -19,6 +19,9 @@ namespace RegressionTest
 
             public override int Damage()
             {
+                if (CriticalHit)
+                    return Dice.D8() + Dice.D8() + Dice.D8() + Dice.D8() + 2;
+
                 return Dice.D8() + Dice.D8() + 2;
             }
         }
@@ -30,7 +33,6 @@ namespace RegressionTest
             InitMod = -1;
             Health = 33;
             MaxHealth = 33;
-            HealingThreshold = 0;
             Group = Team.TeamTwo;
         }
 

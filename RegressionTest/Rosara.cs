@@ -21,11 +21,17 @@ namespace RegressionTest
             public override int Damage()
             {
                 int dmg = Dice.D6() + 2;
+                if (CriticalHit)
+                    dmg += Dice.D6();
 
                 if (!HadSneakAttack)
                 {
                     if (Dice.D10() < 9)
+                    {
                         dmg += (Dice.D6() + Dice.D6());
+                        if (CriticalHit)
+                            dmg += (Dice.D6() + Dice.D6());
+                    }
                     HadSneakAttack = true;
                 }
 
@@ -38,8 +44,9 @@ namespace RegressionTest
             Name = "Rosara";
             AC = 13;
             InitMod = 2;
-            Health = 26;
-            MaxHealth = 26;
+            Health = 18;
+            MaxHealth = 18;
+            HealingThreshold = 8;
             Group = Team.TeamTwo;
             Priority = HealPriority.Low;
         }

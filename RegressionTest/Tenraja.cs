@@ -18,6 +18,8 @@ namespace RegressionTest
 
             public override int Damage()
             {
+                if (CriticalHit)
+                    return Dice.D6() + Dice.D6() + 4;
                 return Dice.D6() + 4;
             }
         }
@@ -38,18 +40,27 @@ namespace RegressionTest
             public override int Damage()
             {
                 int baseDamage = Dice.D10() + 4;
+                if (CriticalHit) baseDamage += Dice.D10();
+
                 if (HuntersMark)
+                {
                     baseDamage += Dice.D6();
+                    if (CriticalHit) baseDamage += Dice.D6();
+                }
 
                 if (!DivineSmite && Dice.D20() == 20)
                 {
                     DivineSmite = true;
                     baseDamage += (Dice.D8() + Dice.D8());
+                    if (CriticalHit) baseDamage += (Dice.D8() + Dice.D8());
                     if (Dice.D20() == 20)
                     {
                         baseDamage += Dice.D8();
+                        if (CriticalHit) baseDamage += Dice.D8();
                     }
                 }
+
+                if (CriticalHit) baseDamage += 7;
 
                 return baseDamage;
             }

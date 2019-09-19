@@ -19,6 +19,9 @@ namespace RegressionTest
 
             public override int Damage()
             {
+                if (CriticalHit)
+                    return Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6() + 3;
+
                 return Dice.D6() + Dice.D6() + 3;
             }
         }
@@ -34,9 +37,19 @@ namespace RegressionTest
 
             public override int Damage()
             {
-                return CurrentAttack < 3 ?
-                    (Dice.D6() + Dice.D6() + 3 + Dice.D8()) :
-                    Dice.D8();
+                if (CurrentAttack < 3)
+                {
+                    if (CriticalHit)
+                        return Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6() + 3 + Dice.D8() + Dice.D8();
+
+                    return Dice.D6() + Dice.D6() + 3 + Dice.D8();
+                }
+                else
+                {
+                    if (CriticalHit)
+                        return Dice.D8();
+                    return Dice.D8();
+                }
             }
         }
 
@@ -46,12 +59,15 @@ namespace RegressionTest
             public EldritchBlast()
             {
                 Desc = "Eldritch Blast";
-                Number = 2;
+                Number = 1;
                 Modifier = 6;
             }
 
             public override int Damage()
             {
+                if (CriticalHit)
+                    return Dice.D10() + Dice.D10() + 3;
+
                 return Dice.D10() + 3;
             }
         }
@@ -61,8 +77,9 @@ namespace RegressionTest
             Name = "Karrius";
             AC = 16;
             InitMod = 2;
-            Health = 48;
-            MaxHealth = 48;
+            Health = 61;
+            MaxHealth = 61;
+            HealingThreshold = 25;
             Group = Team.TeamTwo;
             Priority = HealPriority.High;
         }

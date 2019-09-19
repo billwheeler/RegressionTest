@@ -18,6 +18,9 @@ namespace RegressionTest
 
             public override int Damage()
             {
+                if (CriticalHit)
+                    return Dice.D12() + Dice.D12() + Dice.D12() + Dice.D12() + Dice.D12() + Dice.D12();
+
                 return Dice.D12() + Dice.D12() + Dice.D12();
             }
         }
@@ -33,6 +36,9 @@ namespace RegressionTest
 
             public override int Damage()
             {
+                if (CriticalHit)
+                    return Dice.D10() + Dice.D10() + 4;
+
                 return Dice.D10() + 4;
             }
         }

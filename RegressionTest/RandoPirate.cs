@@ -13,12 +13,14 @@ namespace RegressionTest
             public Scimitar()
             {
                 Desc = "Scimitar";
-                Number = 1;
                 Modifier = 4;
             }
 
             public override int Damage()
             {
+                if (CriticalHit)
+                    return Dice.D6() + Dice.D6() + 2;
+
                 return Dice.D6() + 2;
             }
         }
@@ -28,12 +30,14 @@ namespace RegressionTest
             public LightCrossbow()
             {
                 Desc = "Light Crossbow";
-                Number = 1;
                 Modifier = 4;
             }
 
             public override int Damage()
             {
+                if (CriticalHit)
+                    return Dice.D8() + Dice.D8() + 2;
+
                 return Dice.D8() + 2;
             }
         }
@@ -46,7 +50,7 @@ namespace RegressionTest
             Health = 11;
             MaxHealth = 11;
             Group = Team.TeamTwo;
-            HealingThreshold = 6;
+            HealingThreshold = 7;
             Priority = HealPriority.Low;
         }
 
