@@ -69,8 +69,7 @@ namespace RegressionTest
 
         static void Main(string[] args)
         {
-            Encounter enc = gnolls();
-
+            Encounter enc = pirates();
             for (int i = 0; i < 60000; i++)
             {
                 enc.RollInitiative();
@@ -79,6 +78,17 @@ namespace RegressionTest
             }
 
             Console.WriteLine(enc.Output());
+
+            enc = gnolls();
+            for (int i = 0; i < 60000; i++)
+            {
+                enc.RollInitiative();
+                while (enc.ProcessRound()) { }
+                enc.PostEncounter();
+            }
+
+            Console.WriteLine(enc.Output());
+
             Console.ReadLine();
         }
     }

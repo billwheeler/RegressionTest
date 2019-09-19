@@ -153,7 +153,7 @@ namespace RegressionTest
                             amount
                         ));
 
-                        break;
+                        continue;
                     }
                 }
 
@@ -253,6 +253,8 @@ namespace RegressionTest
 
             output += Players.Output(AllowHealing);
             output += Baddies.Output(AllowHealing);
+
+            output += "\n";
 
             return output;
         }
