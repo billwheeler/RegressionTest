@@ -26,7 +26,7 @@ namespace RegressionTest
     {
         public static Encounter pirates()
         {
-            Encounter enc = new Encounter { OutputAttacks = false, AllowHealing = true };
+            Encounter enc = new Encounter { OutputAttacks = true, AllowHealing = true };
 
             enc.Add(new Tenraja());
             enc.Add(new Raelzegg());
@@ -70,7 +70,7 @@ namespace RegressionTest
         static void Main(string[] args)
         {
             Encounter enc = pirates();
-            for (int i = 0; i < 60000; i++)
+            for (int i = 0; i < 3; i++)
             {
                 enc.RollInitiative();
                 while (enc.ProcessRound()) { }

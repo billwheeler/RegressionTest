@@ -14,15 +14,15 @@ namespace RegressionTest
             {
                 Desc = "Greatsword";
                 Number = 2;
-                Modifier = 6;
+                Modifier = 7;
             }
 
             public override int Damage()
             {
                 if (CriticalHit)
-                    return Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6() + 3;
+                    return Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6() + 4;
 
-                return Dice.D6() + Dice.D6() + 3;
+                return Dice.D6() + Dice.D6() + 4;
             }
         }
 
@@ -32,7 +32,7 @@ namespace RegressionTest
             {
                 Desc = "Greatsword";
                 Number = 3;
-                Modifier = 6;
+                Modifier = 7;
             }
 
             public override int Damage()
@@ -40,9 +40,9 @@ namespace RegressionTest
                 if (CurrentAttack < 3)
                 {
                     if (CriticalHit)
-                        return Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6() + 3 + Dice.D8() + Dice.D8();
+                        return Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6() + 4 + Dice.D8() + Dice.D8();
 
-                    return Dice.D6() + Dice.D6() + 3 + Dice.D8();
+                    return Dice.D6() + Dice.D6() + 4 + Dice.D8();
                 }
                 else
                 {
@@ -77,8 +77,8 @@ namespace RegressionTest
             Name = "Karrius";
             AC = 16;
             InitMod = 2;
-            Health = 48;
-            MaxHealth = 48;
+            Health = 54;
+            MaxHealth = 54;
             HealingThreshold = 22;
             Group = Team.TeamTwo;
             Priority = HealPriority.High;

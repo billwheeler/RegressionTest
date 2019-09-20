@@ -39,7 +39,7 @@ namespace RegressionTest
 
             public override int Damage()
             {
-                int baseDamage = Dice.D10() + 4;
+                int baseDamage = Dice.D10();
                 if (CriticalHit) baseDamage += Dice.D10();
 
                 if (HuntersMark)
@@ -62,7 +62,7 @@ namespace RegressionTest
 
                 if (CriticalHit) baseDamage += 7;
 
-                return baseDamage;
+                return baseDamage + 4;
             }
         }
 

@@ -100,14 +100,11 @@ namespace RegressionTest
             public BurningHands()
             {
                 Desc = "Burning Hands";
-                Modifier = 6;
+                Modifier = 7;
             }
 
             public override int Damage()
             {
-                if (CriticalHit)
-                    return Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6();
-
                 return Dice.D6() + Dice.D6() + Dice.D6();
             }
         }
