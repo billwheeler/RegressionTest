@@ -10,6 +10,8 @@ namespace RegressionTest
     {
         public class Scimitar : BaseAttack
         {
+            public bool HadSneakAttack { get; set; } = false;
+
             public Scimitar()
             {
                 Desc = "Scimitar";
@@ -19,11 +21,22 @@ namespace RegressionTest
 
             public override int Damage()
             {
-                int damage = Dice.D6() + 4;
+                int dmg = Dice.D6();
                 if (CriticalHit)
-                    damage += Dice.D6();
+                    dmg += Dice.D6();
 
-                return damage;
+                if (!HadSneakAttack)
+                {
+                    if (Dice.D10() < 9)
+                    {
+                        dmg += (Dice.D6() + Dice.D6());
+                        if (CriticalHit)
+                            dmg += (Dice.D6() + Dice.D6());
+                    }
+                    HadSneakAttack = true;
+                }
+
+                return dmg + 4;
             }
         }
 
@@ -32,9 +45,9 @@ namespace RegressionTest
             Name = "Kaygrun";
             AC = 15;
             InitMod = 3;
-            Health = 26;
-            MaxHealth = 26;
-            HealingThreshold = 14;
+            Health = 39;
+            MaxHealth = 39;
+            HealingThreshold = 17;
             Group = Team.TeamTwo;
             Priority = HealPriority.Medium;
         }

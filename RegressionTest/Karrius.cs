@@ -59,7 +59,7 @@ namespace RegressionTest
             public EldritchBlast()
             {
                 Desc = "Eldritch Blast";
-                Number = 1;
+                Number = 2;
                 Modifier = 6;
             }
 
@@ -77,9 +77,9 @@ namespace RegressionTest
             Name = "Karrius";
             AC = 16;
             InitMod = 2;
-            Health = 61;
-            MaxHealth = 61;
-            HealingThreshold = 25;
+            Health = 48;
+            MaxHealth = 48;
+            HealingThreshold = 22;
             Group = Team.TeamTwo;
             Priority = HealPriority.High;
         }

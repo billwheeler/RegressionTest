@@ -15,6 +15,7 @@ namespace RegressionTest
             public HandCrossbow()
             {
                 Desc = "Hand Crossbow";
+                Number = 2;
                 Modifier = 4;
             }
 
@@ -44,9 +45,9 @@ namespace RegressionTest
             Name = "Rosara";
             AC = 13;
             InitMod = 2;
-            Health = 18;
-            MaxHealth = 18;
-            HealingThreshold = 8;
+            Health = 22;
+            MaxHealth = 22;
+            HealingThreshold = 13;
             Group = Team.TeamTwo;
             Priority = HealPriority.Low;
         }

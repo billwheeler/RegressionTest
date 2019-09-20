@@ -13,15 +13,15 @@ namespace RegressionTest
             public Scimitar()
             {
                 Desc = "Scimitar";
-                Modifier = 4;
+                Modifier = 3;
             }
 
             public override int Damage()
             {
                 if (CriticalHit)
-                    return Dice.D6() + Dice.D6() + 2;
+                    return Dice.D6() + Dice.D6() + 1;
 
-                return Dice.D6() + 2;
+                return Dice.D6() + 1;
             }
         }
 
@@ -30,15 +30,15 @@ namespace RegressionTest
             public LightCrossbow()
             {
                 Desc = "Light Crossbow";
-                Modifier = 4;
+                Modifier = 3;
             }
 
             public override int Damage()
             {
                 if (CriticalHit)
-                    return Dice.D8() + Dice.D8() + 2;
+                    return Dice.D8() + Dice.D8() + 1;
 
-                return Dice.D8() + 2;
+                return Dice.D8() + 1;
             }
         }
 

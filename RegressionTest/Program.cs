@@ -40,7 +40,7 @@ namespace RegressionTest
             enc.Add(new Karrius());
             enc.Add(new Haltran());
             enc.Add(new Rosara());
-            enc.Add(new MawDemon());
+            //enc.Add(new MawDemon());
 
             return enc;
         }
@@ -79,7 +79,7 @@ namespace RegressionTest
 
             Console.WriteLine(enc.Output());
 
-            enc = gnolls();
+            /*enc = gnolls();
             for (int i = 0; i < 60000; i++)
             {
                 enc.RollInitiative();
@@ -88,6 +88,7 @@ namespace RegressionTest
             }
 
             Console.WriteLine(enc.Output());
+            */
 
             Console.ReadLine();
         }
