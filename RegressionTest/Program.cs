@@ -26,7 +26,7 @@ namespace RegressionTest
     {
         public static Encounter pirates()
         {
-            Encounter enc = new Encounter { OutputAttacks = true, AllowHealing = true };
+            Encounter enc = new Encounter { OutputAttacks = false, AllowHealing = true };
 
             enc.Add(new Tenraja());
             enc.Add(new Raelzegg());
@@ -62,7 +62,26 @@ namespace RegressionTest
             enc.Add(new Gnoll { Name = "Gnoll #5" });
             enc.Add(new Gnoll { Name = "Gnoll #6" });
             enc.Add(new Gnoll { Name = "Gnoll #7" });
-            enc.Add(new Gnoll { Name = "Gnoll #8" });
+
+            return enc;
+        }
+
+        public static Encounter ghasts()
+        {
+            Encounter enc = new Encounter { OutputAttacks = false, AllowHealing = true };
+
+            enc.Add(new Tenraja());
+            enc.Add(new Raelzegg());
+            enc.Add(new Fionula());
+            enc.Add(new Malbraxys());
+            enc.Add(new Sulyman());
+
+            enc.Add(new Ghast { Name = "Ghast #1" });
+            enc.Add(new Ghast { Name = "Ghast #2" });
+            enc.Add(new Ghast { Name = "Ghast #3" });
+            enc.Add(new Ghast { Name = "Ghast #4" });
+            enc.Add(new Ghast { Name = "Ghast #5" });
+            enc.Add(new Ghast { Name = "Ghast #6" });
 
             return enc;
         }
@@ -70,16 +89,6 @@ namespace RegressionTest
         static void Main(string[] args)
         {
             Encounter enc = pirates();
-            for (int i = 0; i < 3; i++)
-            {
-                enc.RollInitiative();
-                while (enc.ProcessRound()) { }
-                enc.PostEncounter();
-            }
-
-            Console.WriteLine(enc.Output());
-
-            /*enc = gnolls();
             for (int i = 0; i < 60000; i++)
             {
                 enc.RollInitiative();
@@ -88,7 +97,26 @@ namespace RegressionTest
             }
 
             Console.WriteLine(enc.Output());
-            */
+
+            enc = gnolls();
+            for (int i = 0; i < 60000; i++)
+            {
+                enc.RollInitiative();
+                while (enc.ProcessRound()) { }
+                enc.PostEncounter();
+            }
+
+            Console.WriteLine(enc.Output());
+
+            enc = ghasts();
+            for (int i = 0; i < 60000; i++)
+            {
+                enc.RollInitiative();
+                while (enc.ProcessRound()) { }
+                enc.PostEncounter();
+            }
+
+            Console.WriteLine(enc.Output());
 
             Console.ReadLine();
         }

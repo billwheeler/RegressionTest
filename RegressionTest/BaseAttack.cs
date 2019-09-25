@@ -29,5 +29,27 @@ namespace RegressionTest
         }
 
         public abstract int Damage();
+
+        public virtual SavingThrow Save()
+        {
+            return new SavingThrow();
+        }
+    }
+
+    public enum AbilityScores
+    {
+        None = 0,
+        Strength = 1,
+        Dexterity = 2,
+        Constitution = 3,
+        Intelligence = 4,
+        Wisdom = 5,
+        Charisma = 6
+    }
+
+    public class SavingThrow
+    {
+        public AbilityScores Attribute { get; set; } = AbilityScores.None;
+        public int Threshold { get; set; } = 10;
     }
 }

@@ -6,6 +6,16 @@ using System.Threading.Tasks;
 
 namespace RegressionTest
 {
+    public class Saves
+    {
+        public int Strength { get; set; } = 0;
+        public int Dexterity { get; set; } = 0;
+        public int Constitution { get; set; } = 0;
+        public int Intelligence { get; set; } = 0;
+        public int Wisdom { get; set; } = 0;
+        public int Charisma { get; set; } = 0;
+    }
+
     public abstract class BaseCharacter
     {
         public int ID { get; set; } = 0;
@@ -20,6 +30,7 @@ namespace RegressionTest
         public bool Healer { get; set; } = false;
         public Team Group { get; set; }
         public HealPriority Priority { get; set; } = HealPriority.Dont;
+        public Saves Scores { get; set; } = new Saves();
 
         public DiceRoller Dice { get; set; } = new DiceRoller();
         public CharacterStats Stats { get; set; } = new CharacterStats();
@@ -78,6 +89,27 @@ namespace RegressionTest
         public virtual int HealAmount(HealPriority priority)
         {
             return 0;
+        }
+
+        public virtual bool Saves(SavingThrow save)
+        {
+            switch (save.Attribute)
+            {
+                case AbilityScores.Strength:
+                    return Dice.D20() + Scores.Strength >= save.Threshold;
+                case AbilityScores.Dexterity:
+                    return Dice.D20() + Scores.Dexterity >= save.Threshold;
+                case AbilityScores.Constitution:
+                    return Dice.D20() + Scores.Constitution >= save.Threshold;
+                case AbilityScores.Intelligence:
+                    return Dice.D20() + Scores.Intelligence >= save.Threshold;
+                case AbilityScores.Wisdom:
+                    return Dice.D20() + Scores.Wisdom >= save.Threshold;
+                case AbilityScores.Charisma:
+                    return Dice.D20() + Scores.Charisma >= save.Threshold;
+            }
+
+            return true;
         }
     }
 }

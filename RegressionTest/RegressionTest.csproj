@@ -50,6 +50,7 @@
     <Compile Include="DiceRoller.cs" />
     <Compile Include="Encounter.cs" />
     <Compile Include="Fionula.cs" />
+    <Compile Include="Ghast.cs" />
     <Compile Include="Gnoll.cs" />
     <Compile Include="Haltran.cs" />
     <Compile Include="Karrius.cs" />
