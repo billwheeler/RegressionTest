@@ -62,6 +62,7 @@
     <Compile Include="Raelzegg.cs" />
     <Compile Include="RandoPirate.cs" />
     <Compile Include="Rosara.cs" />
+    <Compile Include="SeaPrince.cs" />
     <Compile Include="Sulyman.cs" />
     <Compile Include="Template.cs" />
     <Compile Include="Tenraja.cs" />

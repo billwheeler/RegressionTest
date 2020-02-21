@@ -48,8 +48,8 @@ namespace RegressionTest
             Name = "Fionula";
             AC = 15;
             InitMod = 3;
-            Health = 31;
-            MaxHealth = 31;
+            Health = 44;
+            MaxHealth = 44;
             HealingThreshold = 11;
             Group = Team.TeamOne;
             Priority = HealPriority.Medium;

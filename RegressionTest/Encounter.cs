@@ -220,7 +220,6 @@ namespace RegressionTest
             else
                 Players.Wins++;
 
-
             var pcs = Characters.Where(c => c.Group == Players.Group).ToList();
             foreach (BaseCharacter c in pcs)
             {

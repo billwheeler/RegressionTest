@@ -64,8 +64,8 @@ namespace RegressionTest
             Name = "Sulyman";
             AC = 15;
             InitMod = 1;
-            Health = 43;
-            MaxHealth = 43;
+            Health = 51;
+            MaxHealth = 51;
             Group = Team.TeamOne;
             Healer = true;
             Priority = HealPriority.High;

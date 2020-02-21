@@ -14,7 +14,7 @@ namespace RegressionTest
             {
                 Desc = "Spear";
                 Number = 2;
-                Modifier = 4;
+                Modifier = 5;
             }
 
             public override bool Hits(BaseCharacter target)
@@ -50,8 +50,64 @@ namespace RegressionTest
             Name = "Gnoll";
             AC = 15;
             InitMod = 1;
-            Health = 22;
-            MaxHealth = 22;
+            Health = 33;
+            MaxHealth = 33;
+            HealingThreshold = 12;
+            Group = Team.TeamTwo;
+        }
+
+        public override BaseAttack PickAttack()
+        {
+            return new GnollAttack();
+        }
+    }
+
+    public class GnollPackLord : BaseCharacter
+    {
+        public class GnollAttack : BaseAttack
+        {
+            public GnollAttack()
+            {
+                Desc = "Glaive";
+                Number = 3;
+                Modifier = 6;
+            }
+
+            public override bool Hits(BaseCharacter target)
+            {
+                bool hits = base.Hits(target);
+                if (CurrentAttack > 2)
+                    Desc = "Bite";
+
+                return hits;
+            }
+
+            public override int Damage()
+            {
+                int damage = 0;
+
+                if (CurrentAttack < 3)
+                {
+                    damage += Dice.D10();
+                    if (CriticalHit) damage += Dice.D10();
+                }
+                else
+                {
+                    damage += Dice.D4();
+                    if (CriticalHit) damage += Dice.D4();
+                }
+
+                return damage + 3;
+            }
+        }
+
+        public GnollPackLord()
+        {
+            Name = "Gnoll Pack Lord";
+            AC = 15;
+            InitMod = 2;
+            Health = 71;
+            MaxHealth = 71;
             HealingThreshold = 12;
             Group = Team.TeamTwo;
         }

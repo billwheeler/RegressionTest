@@ -47,21 +47,22 @@ namespace RegressionTest
 
         public static Encounter gnolls()
         {
-            Encounter enc = new Encounter { OutputAttacks = false, AllowHealing = true };
+            Encounter enc = new Encounter { OutputAttacks = false, AllowHealing = false };
 
             enc.Add(new Tenraja());
-            enc.Add(new Raelzegg());
+            enc.Add(new Liriam());
+            //enc.Add(new Raelzegg());
             enc.Add(new Fionula());
-            enc.Add(new Malbraxys());
+            //enc.Add(new Malbraxys());
             enc.Add(new Sulyman());
 
             enc.Add(new Gnoll { Name = "Gnoll #1" });
             enc.Add(new Gnoll { Name = "Gnoll #2" });
-            enc.Add(new Gnoll { Name = "Gnoll #3" });
-            enc.Add(new Gnoll { Name = "Gnoll #4" });
-            enc.Add(new Gnoll { Name = "Gnoll #5" });
-            enc.Add(new Gnoll { Name = "Gnoll #6" });
-            enc.Add(new Gnoll { Name = "Gnoll #7" });
+            enc.Add(new SeaPrince { Name = "Sea Prince #1" });
+            enc.Add(new SeaPrince { Name = "Sea Prince #2" });
+            //enc.Add(new Gnoll { Name = "Gnoll #5" });
+            //enc.Add(new Gnoll { Name = "Gnoll #6" });
+            enc.Add(new GnollPackLord { Name = "Gnoll Pack Lord" });
 
             return enc;
         }
@@ -88,6 +89,7 @@ namespace RegressionTest
 
         static void Main(string[] args)
         {
+            /*
             Encounter enc = pirates();
             for (int i = 0; i < 60000; i++)
             {
@@ -95,10 +97,11 @@ namespace RegressionTest
                 while (enc.ProcessRound()) { }
                 enc.PostEncounter();
             }
-
+        
             Console.WriteLine(enc.Output());
+            */
 
-            enc = gnolls();
+            Encounter enc = gnolls();
             for (int i = 0; i < 60000; i++)
             {
                 enc.RollInitiative();
@@ -108,6 +111,7 @@ namespace RegressionTest
 
             Console.WriteLine(enc.Output());
 
+            /*
             enc = ghasts();
             for (int i = 0; i < 60000; i++)
             {
@@ -117,6 +121,7 @@ namespace RegressionTest
             }
 
             Console.WriteLine(enc.Output());
+            */
 
             Console.ReadLine();
         }

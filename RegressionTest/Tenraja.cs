@@ -6,6 +6,75 @@ using System.Threading.Tasks;
 
 namespace RegressionTest
 {
+    public class Liriam : BaseCharacter
+    {
+        public class Hooves : BaseAttack
+        {
+            public Hooves()
+            {
+                Desc = "Hooves";
+                Number = 1;
+                Modifier = 6;
+            }
+
+            public override int Damage()
+            {
+                int dmg = 0;
+                dmg += (Dice.D4() + Dice.D4()) + 4;
+                if (CriticalHit) dmg += (Dice.D4() + Dice.D4());
+                return dmg;
+            }
+        }
+
+        public class Ram : BaseAttack
+        {
+            public Ram()
+            {
+                Desc = "Ram";
+                Number = 1;
+                Modifier = 6;
+            }
+
+            public override int Damage()
+            {
+                int rando = Dice.D10();
+                int dmg = 0;
+
+                if (rando < 7)
+                {
+                    dmg += (Dice.D6() + Dice.D6());
+                    if (CriticalHit) dmg += (Dice.D6() + Dice.D6());
+                }
+
+                dmg += Dice.D6() + 4;
+                if (CriticalHit) dmg += Dice.D6();
+
+                return dmg;
+            }
+        }
+
+        public override BaseAttack PickAttack()
+        {
+            int rando = Dice.D10();
+            if (rando < 8)
+                return new Ram();
+
+            return new Hooves();
+        }
+
+        public Liriam()
+        {
+            Name = "Liriam";
+            AC = 11;
+            Health = 25;
+            MaxHealth = 25;
+            HealingThreshold = 1;
+            Group = Team.TeamOne;
+            Healer = false;
+            Priority = HealPriority.Dont;
+        }
+    }
+
     public class Tenraja : BaseCharacter
     {
         public class GorningHorns : BaseAttack
@@ -70,8 +139,8 @@ namespace RegressionTest
         {
             Name = "Tenraja";
             AC = 16;
-            Health = 44;
-            MaxHealth = 44;
+            Health = 52;
+            MaxHealth = 52;
             HealingThreshold = 15;
             Group = Team.TeamOne;
             Healer = true;
