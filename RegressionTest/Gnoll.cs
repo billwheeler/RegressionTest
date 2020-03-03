@@ -50,8 +50,8 @@ namespace RegressionTest
             Name = "Gnoll";
             AC = 15;
             InitMod = 1;
-            Health = 33;
-            MaxHealth = 33;
+            Health = 22;
+            MaxHealth = 22;
             HealingThreshold = 12;
             Group = Team.TeamTwo;
         }

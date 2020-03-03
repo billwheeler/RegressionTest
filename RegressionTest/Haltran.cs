@@ -63,12 +63,12 @@ namespace RegressionTest
         public Haltran()
         {
             Name = "Haltran";
-            AC = 15;
+            AC = 18;
             InitMod = 2;
-            Health = 28;
-            MaxHealth = 28;
+            Health = 44;
+            MaxHealth = 44;
             Group = Team.TeamTwo;
-            Healer = true;
+            Healer = false;
             Priority = HealPriority.High;
         }
 

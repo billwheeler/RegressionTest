@@ -48,6 +48,7 @@
     <Compile Include="BaseCharacter.cs" />
     <Compile Include="CharacterStats.cs" />
     <Compile Include="DiceRoller.cs" />
+    <Compile Include="Elocin.cs" />
     <Compile Include="Encounter.cs" />
     <Compile Include="Fionula.cs" />
     <Compile Include="Ghast.cs" />
