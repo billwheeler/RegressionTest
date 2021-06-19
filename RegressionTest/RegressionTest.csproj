@@ -48,25 +48,20 @@
     <Compile Include="BaseCharacter.cs" />
     <Compile Include="CharacterStats.cs" />
     <Compile Include="DiceRoller.cs" />
-    <Compile Include="Elocin.cs" />
     <Compile Include="Encounter.cs" />
     <Compile Include="Fionula.cs" />
-    <Compile Include="Ghast.cs" />
     <Compile Include="Gnoll.cs" />
-    <Compile Include="Haltran.cs" />
-    <Compile Include="Karrius.cs" />
-    <Compile Include="Kaygrun.cs" />
+    <Compile Include="Hellwasp.cs" />
+    <Compile Include="Lorax.cs" />
     <Compile Include="Malbraxys.cs" />
     <Compile Include="MawDemon.cs" />
+    <Compile Include="Nightwalker.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Raelzegg.cs" />
-    <Compile Include="RandoPirate.cs" />
-    <Compile Include="Rosara.cs" />
-    <Compile Include="SeaPrince.cs" />
     <Compile Include="Sulyman.cs" />
     <Compile Include="Template.cs" />
     <Compile Include="Tenraja.cs" />
+    <Compile Include="Wight.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />

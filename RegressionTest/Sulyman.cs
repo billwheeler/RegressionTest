@@ -8,29 +8,13 @@ namespace RegressionTest
 {
     public class Sulyman : BaseCharacter
     {
-        public class TollOfTheDead : BaseAttack
+        public class GuidingBoltSpirit : GuidingBolt
         {
-            public TollOfTheDead()
+            public GuidingBoltSpirit()
             {
-                Desc = "Toll of the Dead";
-                Modifier = 7;
-            }
-
-            public override int Damage()
-            {
-                if (CriticalHit)
-                    return Dice.D12() + Dice.D12() + Dice.D12() + Dice.D12();
-                return Dice.D12() + Dice.D12();
-            }
-        }
-
-        public class TollOfTheDeadSpirit : BaseAttack
-        {
-            public TollOfTheDeadSpirit()
-            {
-                Desc = "Toll of the Dead";
+                Desc = "Guiding Bolt";
                 Number = 2;
-                Modifier = 7;
+                Modifier = 9;
             }
 
             public override bool Hits(BaseCharacter target)
@@ -47,25 +31,91 @@ namespace RegressionTest
                 if (CurrentAttack > 1)
                 {
                     if (CriticalHit)
-                        return Dice.D12() + Dice.D12() + Dice.D12() + Dice.D12();
-                    return Dice.D12() + Dice.D12();
+                        return Dice.D8() + Dice.D8() + 4;
+                    return Dice.D8() + 4;
                 }
-                else
+
+                return base.Damage();
+            }
+        }
+
+        public class GuidingBolt : BaseAttack
+        {
+            public int Level { get; set; }
+
+            public GuidingBolt()
+            {
+                Desc = "Guiding Bolt";
+                Modifier = 9;
+            }
+
+            public override int Damage()
+            {
+                int numDice = 3 + Level;
+                if (CriticalHit) numDice *= 2;
+
+                int damage = 0;
+                for (int i = 0; i < numDice; i++)
+                {
+                    damage += Dice.D6();
+                }
+
+                return damage;
+            }
+        }
+
+        public class TollOfTheDead : BaseAttack
+        {
+            public TollOfTheDead()
+            {
+                Desc = "Toll of the Dead";
+                Modifier = 9;
+            }
+
+            public override int Damage()
+            {
+                return Dice.D12() + Dice.D12();
+            }
+        }
+
+        public class TollOfTheDeadSpirit : TollOfTheDead
+        {
+            public TollOfTheDeadSpirit()
+            {
+                Desc = "Guiding Bolt";
+                Number = 2;
+                Modifier = 9;
+            }
+
+            public override bool Hits(BaseCharacter target)
+            {
+                bool hits = base.Hits(target);
+                if (CurrentAttack > 1)
+                    Desc = "Spirtual Weapon";
+
+                return hits;
+            }
+
+            public override int Damage()
+            {
+                if (CurrentAttack > 1)
                 {
                     if (CriticalHit)
                         return Dice.D8() + Dice.D8() + 4;
                     return Dice.D8() + 4;
                 }
+
+                return base.Damage();
             }
         }
 
         public Sulyman()
         {
             Name = "Sulyman";
-            AC = 15;
+            AC = 16;
             InitMod = 1;
-            Health = 51;
-            MaxHealth = 51;
+            Health = 75;
+            MaxHealth = 75;
             Group = Team.TeamOne;
             Healer = true;
             Priority = HealPriority.High;
@@ -73,11 +123,30 @@ namespace RegressionTest
 
         public override BaseAttack PickAttack()
         {
-            int rando = Dice.D10();
-            if (rando > 6)
-                return new TollOfTheDeadSpirit();
-
-            return new TollOfTheDead();
+            switch (Dice.D10())
+            {
+                case 1:
+                    return new GuidingBoltSpirit { Level = Dice.D5() };
+                case 2:
+                    return new GuidingBoltSpirit { Level = Dice.D5() };
+                case 3:
+                    return new GuidingBolt { Level = Dice.D5() };
+                case 4:
+                    return new GuidingBolt { Level = Dice.D5() };
+                case 5:
+                    return new TollOfTheDeadSpirit();
+                case 6:
+                    return new TollOfTheDeadSpirit();
+                case 7:
+                    return new TollOfTheDeadSpirit();
+                case 8:
+                    return new TollOfTheDeadSpirit();
+                case 9:
+                    return new TollOfTheDead();
+                case 10:
+                default:
+                    return new TollOfTheDead();
+            }
         }
 
         public override int HealAmount(HealPriority priority)

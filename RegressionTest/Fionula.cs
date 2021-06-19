@@ -8,20 +8,17 @@ namespace RegressionTest
 {
     public class Fionula : BaseCharacter
     {
-        public class Witchbolt : BaseAttack
+        public class GravitySinkhole : BaseAttack
         {
-            public Witchbolt()
+            public GravitySinkhole()
             {
-                Desc = "Witchbolt";
-                Modifier = 7;
+                Desc = "Gravity Sinkhole";
+                Modifier = 9;
             }
 
             public override int Damage()
             {
-                if (CriticalHit)
-                    return Dice.D12() + Dice.D12() + Dice.D12() + Dice.D12() + Dice.D12() + Dice.D12();
-
-                return Dice.D12() + Dice.D12() + Dice.D12();
+                return Dice.D10() + Dice.D10() + Dice.D10() + Dice.D10() + Dice.D10();
             }
         }
 
@@ -31,15 +28,15 @@ namespace RegressionTest
             {
                 Desc = "Eldritch Blast";
                 Number = 2;
-                Modifier = 7;
+                Modifier = 9;
             }
 
             public override int Damage()
             {
                 if (CriticalHit)
-                    return Dice.D10() + Dice.D10() + 4;
+                    return Dice.D10() + Dice.D10() + 5;
 
-                return Dice.D10() + 4;
+                return Dice.D10() + 5;
             }
         }
 
@@ -48,9 +45,9 @@ namespace RegressionTest
             Name = "Fionula";
             AC = 15;
             InitMod = 3;
-            Health = 44;
-            MaxHealth = 44;
-            HealingThreshold = 11;
+            Health = 75;
+            MaxHealth = 75;
+            HealingThreshold = 30;
             Group = Team.TeamOne;
             Priority = HealPriority.Medium;
         }
@@ -60,7 +57,7 @@ namespace RegressionTest
             int rando = Dice.D10();
             if (rando == 10)
             {
-                return new Witchbolt();
+                return new GravitySinkhole();
             }
             else
             {
