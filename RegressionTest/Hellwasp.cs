@@ -8,40 +8,42 @@ namespace RegressionTest
 {
     public class Hellwasp : BaseCharacter
     {
-        public class HellwaspAttack : BaseAttack
+        public class HellwaspSting : BaseAction
         {
-            public HellwaspAttack()
+            public HellwaspSting()
             {
                 Desc = "Sting";
-                Number = 2;
-                Modifier = 7;
+                Type = ActionType.MeleeAttack;
+                Time = ActionTime.Action;
+                AttackModifier = 7;
+                Modifier = 4;
             }
 
-            public override bool Hits(BaseCharacter target)
-            {
-                bool hits = base.Hits(target);
-                if (CurrentAttack > 1)
-                    Desc = "Sword Talons";
-
-                return hits;
-            }
-
-            public override int Damage()
+            public override int Amount()
             {
                 int damage = 0;
 
-                if (CurrentAttack > 1)
-                {
-                    damage += Dice.D6() + Dice.D6();
-                    if (CriticalHit) damage += Dice.D6() + Dice.D6();
-                }
-                else
-                {
-                    damage += Dice.D8() + Dice.D6() + Dice.D6();
-                    if (CriticalHit) damage += Dice.D8() + Dice.D6() + Dice.D6();
-                }
+                damage += Dice.D8(CriticalHit ? 2 : 1);
+                damage += Dice.D6(CriticalHit ? 4 : 2);
 
-                return damage + 4;
+                return damage;
+            }
+        }
+
+        public class HellwaspTalons : BaseAction
+        {
+            public HellwaspTalons()
+            {
+                Desc = "Sword Talons";
+                Type = ActionType.MeleeAttack;
+                Time = ActionTime.Action;
+                AttackModifier = 7;
+                Modifier = 4;
+            }
+
+            public override int Amount()
+            {
+                return Dice.D6(CriticalHit ? 4 : 2);
             }
         }
 
@@ -54,11 +56,23 @@ namespace RegressionTest
             MaxHealth = 52;
             Group = Team.TeamTwo;
             Priority = HealPriority.Medium;
+
+            Abilities.Add(AbilityScore.Strength, new Stat { Score = 18, Mod = 4, Save = 4 });
+            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 15, Mod = 2, Save = 5 });
+            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 12, Mod = 1, Save = 1 });
+            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 10, Mod = 0, Save = 0 });
+            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 10, Mod = 0, Save = 3 });
+            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 7, Mod = -2, Save = -2 });
         }
 
-        public override BaseAttack PickAttack()
+        public override BaseAction PickAction()
         {
-            return new HellwaspAttack();
+            return new HellwaspSting();
+        }
+
+        public override BaseAction PickBonusAction()
+        {
+            return new HellwaspTalons();
         }
     }
 }

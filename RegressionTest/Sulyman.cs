@@ -126,13 +126,13 @@ namespace RegressionTest
             switch (Dice.D10())
             {
                 case 1:
-                    return new GuidingBoltSpirit { Level = Dice.D5() };
+                    return new GuidingBoltSpirit { Level = Dice.D4() };
                 case 2:
-                    return new GuidingBoltSpirit { Level = Dice.D5() };
+                    return new GuidingBoltSpirit { Level = Dice.D4() };
                 case 3:
-                    return new GuidingBolt { Level = Dice.D5() };
+                    return new GuidingBolt { Level = Dice.D4() };
                 case 4:
-                    return new GuidingBolt { Level = Dice.D5() };
+                    return new GuidingBolt { Level = Dice.D4() };
                 case 5:
                     return new TollOfTheDeadSpirit();
                 case 6:

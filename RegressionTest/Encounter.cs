@@ -19,6 +19,9 @@ namespace RegressionTest
 
         private int currentId = 0;
 
+        public List<int> PreTurnChars = new List<int>();
+        public List<int> PostTurnChars = new List<int>();
+
         public class InitSort : IComparer<BaseCharacter>
         {
             public int Compare(BaseCharacter a, BaseCharacter b)
@@ -55,9 +58,18 @@ namespace RegressionTest
 
         public void Add(BaseCharacter character)
         {
+            if (!AllowHealing)
+                character.Healer = false;
+
             currentId++;
             character.ID = currentId;
             Characters.Add(character);
+
+            if (character.PreTurnNotify)
+                PreTurnChars.Add(character.ID);
+
+            if (character.PostTurnNotify)
+                PostTurnChars.Add(character.ID);
         }
 
         public void RollInitiative()
@@ -78,6 +90,22 @@ namespace RegressionTest
         public List<BaseCharacter> TeamMembers(Team group)
         {
             return Characters.Where(c => c.Group == group).ToList();
+        }
+
+        public int GetIndexByID(int id)
+        {
+            for (int i = 0; i < Characters.Count; i++)
+            {
+                if (Characters[i].ID == id)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        public BaseCharacter GetByID(int id)
+        {
+            return Characters.Where(c => c.ID == id).First();
         }
 
         public int PickEnemy(Team group)
@@ -111,81 +139,175 @@ namespace RegressionTest
             return -1;
         }
 
-        public bool ProcessRound()
+        public bool ProcessAction(BaseAction action, int me, int target = -1)
         {
-            bool result = true;
-            if (OutputAttacks) Console.WriteLine(string.Format("--- Encounter Round {0} --- ", Round));
-
-            for (int me = 0; me < Characters.Count; me++)
+            if (action.Type == BaseAction.ActionType.Heal)
             {
-                if (!Characters[me].Alive)
-                {
-                    continue;
-                }
+                int amount = action.Amount();
+                Characters[me].HealTarget.Heal(amount);
+                Characters[me].Stats.Healed += amount;
 
-                int enemy = PickEnemy(Characters[me].Group);
-                if (enemy == -1)
-                {
-                    result = false;
-                    break;
-                }
+                if (Characters[me].Group == Team.TeamOne)
+                    Players.TotalHealing += amount;
+                else if (Characters[me].Group == Team.TeamTwo)
+                    Baddies.TotalHealing += amount;
 
-                Characters[me].Stats.Rounds++;
-
-                if (AllowHealing && Characters[me].Healer)
+                if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}] heals {2} for {3}hp.",
+                    Characters[me].Name,
+                    Characters[me].GetHealthDesc(),
+                    Characters[me].HealTarget.Name,
+                    amount
+                ));
+            }
+            else if (action.Type == BaseAction.ActionType.GrantTempHp)
+            {
+                if (target > -1)
                 {
-                    int target = PickHealTarget(Characters[me].Group);
-                    if (target > -1)
+                    // don't give temp hit points to enemies
+                    if (Characters[me].Group == Characters[target].Group)
                     {
-                        int amount = Characters[me].HealAmount(Characters[target].Priority);
-                        Characters[target].Heal(amount);
-                        Characters[me].Stats.Healed += amount;
+                        int amount = action.Amount();
 
-                        if (Characters[me].Group == Team.TeamOne)
-                            Players.TotalHealing += amount;
-                        else if (Characters[me].Group == Team.TeamTwo)
-                            Baddies.TotalHealing += amount;
+                        // only grant temp hp if it's most than we have
+                        if (Characters[target].TempHitPoints < amount)
+                        {
+                            Characters[target].SetTempHitPoints(amount);
 
-                        if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}hp] heals {2} for {3}hp.",
-                            Characters[me].Name,
-                            Characters[me].Health,
-                            Characters[target].Name, 
-                            amount
-                        ));
+                            if (Characters[me].Group == Team.TeamOne)
+                                Players.TotalTempHP += amount;
+                            else if (Characters[me].Group == Team.TeamTwo)
+                                Baddies.TotalTempHP += amount;
 
-                        continue;
+                            if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}] grants {2} temp hp to {3}.",
+                                Characters[me].Name,
+                                Characters[me].GetHealthDesc(),
+                                amount,
+                                Characters[target].Name
+                            ));
+                        }
                     }
                 }
-
-                BaseAttack attack = Characters[me].PickAttack();
-
-                for (int i = 0; i < attack.Number; i++)
+            }
+            else if (action.Type == BaseAction.ActionType.Activate)
+            {
+                if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}] activates {2}.",
+                    Characters[me].Name,
+                    Characters[me].GetHealthDesc(),
+                    action.Desc
+                ));
+            }
+            else if (action.Type == BaseAction.ActionType.SpellSave)
+            {
+                if (target > -1)
                 {
-                    bool hits = attack.Hits(Characters[enemy]);
+                    // don't attact teammates
+                    if (Characters[me].Group == Characters[target].Group)
+                        return true;
+                }
+
+                int enemy = target > -1 ? target : PickEnemy(Characters[me].Group);
+                if (enemy == -1)
+                {
+                    return false;
+                }
+
+                bool hits = action.Hits(Characters[enemy]);
+                int damage = 0;
+                bool survives = true;
+                string description = "no damage";
+                string concentration = ".";
+
+                if (hits)
+                {
+                    damage = action.Amount();
+                    Characters[me].Stats.DamageGiven += damage;
+                    Characters[enemy].Stats.DamageTaken += damage;
+                    survives = Characters[enemy].TakeDamage(damage);
+
+                    if (Characters[enemy].Concentrating)
+                    {
+                        concentration = Characters[enemy].ConcentrationCheck(damage) ?
+                            ", maintains concentration." :
+                            ", loses concentration.";
+                    }
+
+                    description = survives ?
+                        string.Format("{0}hp damage", damage) :
+                        string.Format("{0}hp damage, and dies", damage);
+                }
+
+                if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}] - {2}, {3}. {4} takes {5}{6}",
+                        Characters[me].Name,
+                        Characters[me].GetHealthDesc(),
+                        action.Desc,
+                        action.HitDesc(),
+                        Characters[enemy].Name,
+                        description,
+                        concentration
+                ));
+
+                if (!survives)
+                {
+                    Characters[enemy].Stats.Deaths++;
+                    enemy = PickEnemy(Characters[me].Group);
+                    if (enemy == -1)
+                    {
+                        return false;
+                    }
+                }
+            }
+            else if (action.Type != BaseAction.ActionType.None)
+            {
+                if (target > -1)
+                {
+                    // don't attact teammates
+                    if (Characters[me].Group == Characters[target].Group)
+                        return true;
+                }
+
+                int enemy = target > -1 ? target : PickEnemy(Characters[me].Group);
+                if (enemy == -1)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < action.TotalToRun; i++)
+                {
+                    bool hits = action.Hits(Characters[enemy]);
                     Characters[me].Stats.Attacks++;
                     int damage = 0;
                     bool survives = true;
-                    string description = "no damage.";
+                    string description = "no damage";
+                    string concentration = ".";
 
                     if (hits)
                     {
                         Characters[me].Stats.Hits++;
-                        damage = attack.Damage();
+                        damage = action.Amount();
                         Characters[me].Stats.DamageGiven += damage;
                         Characters[enemy].Stats.DamageTaken += damage;
                         survives = Characters[enemy].TakeDamage(damage);
+
+                        if (Characters[enemy].Concentrating)
+                        {
+                            concentration = Characters[enemy].ConcentrationCheck(damage) ?
+                                ", maintains concentration." :
+                                ", loses concentration.";
+                        }
+
                         description = survives ?
-                            string.Format("{0}hp damage.", damage) :
-                            string.Format("{0}hp damage, and dies!", damage);
+                            string.Format("{0}hp damage", damage) :
+                            string.Format("{0}hp damage, and dies", damage);
                     }
 
-                    if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}hp] - {2}, {3}. {4} takes {5}",
+                    if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}] - {2}, {3}. {4} takes {5}{6}",
                          Characters[me].Name,
-                         Characters[me].Health,
-                         attack.Desc,
-                         hits ? (attack.CriticalHit ? "critical hit" : "hits") : "misses",
+                         Characters[me].GetHealthDesc(),
+                         action.Desc,
+                         action.HitDesc(),
                          Characters[enemy].Name,
-                         description
+                         description,
+                         concentration
                     ));
 
                     if (!survives)
@@ -194,6 +316,100 @@ namespace RegressionTest
                         enemy = PickEnemy(Characters[me].Group);
                         if (enemy == -1)
                         {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        public bool ProcessRound()
+        {
+            bool result = true;
+            if (OutputAttacks) Console.WriteLine(string.Format("\n--- Encounter Round {0} --- ", Round));
+
+            for (int me = 0; me < Characters.Count; me++)
+            {
+                // am dead, am big cat no more
+                if (!Characters[me].Alive)
+                {
+                    continue;
+                }
+
+                // has a team prevailed?
+                if (CurrentEnemies(Team.TeamOne).Count == 0 || CurrentEnemies(Team.TeamTwo).Count == 0)
+                {
+                    if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
+                    result = false;
+                    break;
+                }
+
+                Characters[me].Stats.Rounds++;
+                Characters[me].OnNewRound();
+
+                // are we a healer? does anyone need it?
+                if (AllowHealing && Characters[me].Healer)
+                {
+                    int target = PickHealTarget(Characters[me].Group);
+                    if (target > -1)
+                    {
+                        Characters[me].HealTarget = Characters[target];
+                    }
+                }
+
+                Characters[me].OnNewTurn();
+
+                foreach (int id in PreTurnChars)
+                {
+                    int idx = GetIndexByID(id);
+                    BaseAction preAction = Characters[idx].PickPreTurn();
+                    if (!ProcessAction(preAction, idx, me))
+                    {
+                        if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
+                        result = false;
+                        break;
+                    }
+                }
+
+                // am dead, am big cat no more
+                if (!Characters[me].Alive)
+                {
+                    continue;
+                }
+
+                // pick action
+                BaseAction mainAction = Characters[me].PickAction();
+                if (!ProcessAction(mainAction, me))
+                {
+                    if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
+                    result = false;
+                    break;
+                }
+
+
+                // pick bonus action
+                BaseAction bonusAction = Characters[me].PickBonusAction();
+                if (!ProcessAction(bonusAction, me))
+                {
+                    if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
+                    result = false;
+                    break;
+                }
+
+                Characters[me].OnEndTurn();
+
+                // post turn reactions
+                if (result)
+                {
+                    foreach (int id in PostTurnChars)
+                    {
+                        int idx = GetIndexByID(id);
+                        BaseAction postAction = Characters[idx].PickPostTurn();
+                        if (!ProcessAction(postAction, idx, me))
+                        {
+                            if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
                             result = false;
                             break;
                         }
@@ -201,6 +417,7 @@ namespace RegressionTest
                 }
             }
 
+            // has a team prevailed?
             if (CurrentEnemies(Team.TeamOne).Count == 0 || CurrentEnemies(Team.TeamTwo).Count == 0)
                 result = false;
 
@@ -239,7 +456,7 @@ namespace RegressionTest
 
             foreach (BaseCharacter c in Characters.OrderBy(c => c.Name))
             {
-                output += string.Format("{0} - DPR: {1}hp, Accuracy: {2}%, Mortality: {3}%, ATE: {4} \n",
+                output += string.Format("{0} - DPR: {1}hp, Accuracy: {2}%, Mortality: {3}%, Average Rounds: {4} \n",
                     c.Name, 
                     c.Stats.DPR.ToString("0.##"),
                     c.Stats.Accuracy.ToString("0.##"),

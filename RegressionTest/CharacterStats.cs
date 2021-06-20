@@ -73,6 +73,7 @@ namespace RegressionTest
         public int Wins { get; set; } = 0;
         public float TotalDPR { get; set; }
         public int TotalHealing { get; set; }
+        public int TotalTempHP { get; set; }
 
         public float AverageDPR
         {
@@ -87,6 +88,14 @@ namespace RegressionTest
             get
             {
                 return (float)TotalHealing / (float)Encounters;
+            }
+        }
+
+        public float AverageTempHP
+        {
+            get
+            {
+                return (float)TotalTempHP / (float)Encounters;
             }
         }
 
@@ -113,8 +122,8 @@ namespace RegressionTest
 
             if (showHealing)
             {
-                output = string.Format("{0} - DPR: {1:0.00}hp, HPE: {2:0.00}hp, Wins: {3:0.00}%, Rounds {4:0.00} \n",
-                    Name, AverageDPR, AverageHealing, Success, AverageRounds
+                output = string.Format("{0} - DPR: {1:0.00}hp, HPE: {2:0.00}hp, THPE: {3:0.00}hp, Wins: {4:0.00}%, Rounds {5:0.00} \n",
+                    Name, AverageDPR, AverageHealing, AverageTempHP, Success, AverageRounds
                 );
             }
             else
