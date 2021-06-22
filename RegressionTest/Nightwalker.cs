@@ -8,61 +8,52 @@ namespace RegressionTest
 {
     public class Nightwalker : BaseCharacter
     {
-        public class EnervatingFocus : BaseAttack
+        public class EnervatingFocus : BaseAction
         {
             public EnervatingFocus()
             {
                 Desc = "Enervating Focus";
-                Number = 3;
-                Modifier = 12;
+                Type = ActionType.MeleeAttack;
+                AttackModifier = 12;
+                Modifier = 6;
+                TotalToRun = 2;
             }
 
-            public override int Damage()
+            public override int Amount()
             {
-                if (CurrentAttack == 1)
-                {
-                    return Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6();
-                }
-
-                int numDice = 5;
-                if (CriticalHit) numDice *= 2;
-
-                int damage = 0;
-                for (int i = 0; i < numDice; i++)
-                {
-                    damage += Dice.D8();
-                }
-
-                return damage + 6;
+                return Dice.D8(CriticalHit ? 10 : 5) + Modifier;
             }
         }
 
-        public class EnervatingFocusFinger : EnervatingFocus
+        public class FingerOfDoom : BaseAction
         {
-            public EnervatingFocusFinger()
+            public FingerOfDoom()
             {
-                Desc = "Enervating Focus";
-                Number = 3;
-                Modifier = 12;
+                Desc = "Finger of Doom";
+                Type = ActionType.SpellSave;
+                Ability = AbilityScore.Wisdom;
+                DC = 21;
             }
 
-            public override bool Hits(BaseCharacter target)
+            public override int Amount()
             {
-                bool hits = base.Hits(target);
-                if (CurrentAttack > 1)
-                    Desc = "Finger of Death";
+                return Dice.D12(4);
+            }
+        }
 
-                return hits;
+        public class AnnihilatingAura : BaseAction
+        {
+            public AnnihilatingAura()
+            {
+                Desc = "Annihilating Aura";
+                Type = ActionType.SpellSave;
+                Ability = AbilityScore.Constitution;
+                DC = 21;
             }
 
-            public override int Damage()
+            public override int Amount()
             {
-                if (CurrentAttack > 2)
-                {
-                    return Dice.D12() + Dice.D12() + Dice.D12() + Dice.D12();
-                }
-
-                return base.Damage();
+                return Dice.D6(4);
             }
         }
 
@@ -74,14 +65,38 @@ namespace RegressionTest
             Health = 297;
             MaxHealth = 297;
             Group = Team.TeamTwo;
+            PreTurnNotify = true;
+
+            Abilities.Add(AbilityScore.Strength, new Stat { Score = 22, Mod = 6, Save = 6 });
+            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 19, Mod = 4, Save = 4 });
+            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 24, Mod = 7, Save = 13 });
+            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 6, Mod = -2, Save = -2 });
+            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 9, Mod = -1, Save = -1 });
+            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 8, Mod = -1, Save = -1 });
         }
 
-        public override BaseAttack PickAttack()
+        public override BaseAction PickAction()
+        {
+            return new EnervatingFocus();
+        }
+
+        public override BaseAction PickBonusAction()
         {
             if (Dice.D6() == 6)
-                return new EnervatingFocusFinger();
+                return new FingerOfDoom();
 
-            return new EnervatingFocus();
+            return new NoAction();
+        }
+
+        public override BaseAction PickPreTurn()
+        {
+            // we'll say that only 67% of the time an enemy is in range
+            if (Dice.D100() <= 67)
+            {
+                return new AnnihilatingAura();
+            }
+
+            return new NoAction();
         }
     }
 }

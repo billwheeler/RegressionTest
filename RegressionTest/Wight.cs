@@ -8,48 +8,39 @@ namespace RegressionTest
 {
     public class Wight : BaseCharacter
     {
-        public class LongswordAttack : BaseAttack
+        public class Longsword : BaseAction
         {
-            public LongswordAttack()
+            public Longsword()
             {
                 Desc = "Longsword";
-                Number = 2;
-                Modifier = 9;
+                Type = ActionType.MeleeAttack;
+                Time = ActionTime.Action;
+                AttackModifier = 9;
+                Modifier = 4;
+                TotalToRun = 2;
             }
 
-            public override int Damage()
+            public override int Amount()
             {
-                if (CriticalHit)
-                    return Dice.D8() + Dice.D8() + 4;
+                return Dice.D8(CriticalHit ? 2 : 1) + Modifier;
 
-                return Dice.D8() + 4;
             }
         }
 
-        public class LongswordDrain : LongswordAttack
+        public class LifeDrain : BaseAction
         {
-            public LongswordDrain()
+            public LifeDrain()
             {
-                Desc = "Longsword";
-                Number = 2;
-                Modifier = 9;
+                Desc = "Life Drain";
+                Type = ActionType.SpellAttack;
+                Time = ActionTime.BonusAction;
+                Ability = AbilityScore.Constitution;
+                DC = 17;
             }
 
-            public override bool Hits(BaseCharacter target)
+            public override int Amount()
             {
-                bool hits = base.Hits(target);
-                if (CurrentAttack > 1)
-                    Desc = "Life Drain";
-
-                return hits;
-            }
-
-            public override int Damage()
-            {
-                if (CurrentAttack > 1)
-                    return Dice.D6() + Dice.D6() + Dice.D6() + Dice.D6();
-
-                return base.Damage();
+                return Dice.D6(4);
             }
         }
 
@@ -64,12 +55,15 @@ namespace RegressionTest
             Priority = HealPriority.Medium;
         }
 
-        public override BaseAttack PickAttack()
+        public override BaseAction PickAction()
         {
-            if (Dice.D6() == 1)
-                return new LongswordAttack();
-
-            return new LongswordDrain();
+            return new Longsword();
         }
+
+        public override BaseAction PickBonusAction()
+        {
+            return new LifeDrain();
+        }
+
     }
 }

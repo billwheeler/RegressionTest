@@ -61,6 +61,9 @@ namespace RegressionTest
             if (!AllowHealing)
                 character.Healer = false;
 
+            //if (character.Group == Team.TeamOne)
+            //    character.HasBless = true;
+
             currentId++;
             character.ID = currentId;
             Characters.Add(character);
@@ -211,7 +214,7 @@ namespace RegressionTest
                     return false;
                 }
 
-                bool hits = action.Hits(Characters[enemy]);
+                bool hits = action.Hits(Characters[me], Characters[enemy]);
                 int damage = 0;
                 bool survives = true;
                 string description = "no damage";
@@ -223,6 +226,10 @@ namespace RegressionTest
                     Characters[me].Stats.DamageGiven += damage;
                     Characters[enemy].Stats.DamageTaken += damage;
                     survives = Characters[enemy].TakeDamage(damage);
+
+                    Characters[me].Stats.Attacks++;
+                    if (action.Result == BaseAction.DamageAmount.Full)
+                        Characters[me].Stats.Hits++;
 
                     if (Characters[enemy].Concentrating)
                     {
@@ -273,7 +280,7 @@ namespace RegressionTest
 
                 for (int i = 0; i < action.TotalToRun; i++)
                 {
-                    bool hits = action.Hits(Characters[enemy]);
+                    bool hits = action.Hits(Characters[me], Characters[enemy]);
                     Characters[me].Stats.Attacks++;
                     int damage = 0;
                     bool survives = true;
@@ -379,19 +386,18 @@ namespace RegressionTest
                     continue;
                 }
 
-                // pick action
-                BaseAction mainAction = Characters[me].PickAction();
-                if (!ProcessAction(mainAction, me))
+                // pick bonus action
+                BaseAction bonusAction = Characters[me].PickBonusAction();
+                if (!ProcessAction(bonusAction, me))
                 {
                     if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
                     result = false;
                     break;
                 }
 
-
-                // pick bonus action
-                BaseAction bonusAction = Characters[me].PickBonusAction();
-                if (!ProcessAction(bonusAction, me))
+                // pick action
+                BaseAction mainAction = Characters[me].PickAction();
+                if (!ProcessAction(mainAction, me))
                 {
                     if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
                     result = false;

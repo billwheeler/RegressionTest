@@ -11,6 +11,25 @@ namespace RegressionTest
         public bool SpiritGuardiansRunning { get; set; }
         public bool TwilightSanctuaryRunning { get; set; }
 
+        public bool ShouldTwilight { get; set; } = true;
+
+        public class TollOfTheDead : BaseAction
+        {
+            public TollOfTheDead()
+            {
+                Desc = "Toll of the Dead";
+                Type = ActionType.SpellSave;
+                Time = ActionTime.Action;
+                Ability = AbilityScore.Wisdom;
+                DC = 17;
+            }
+
+            public override int Amount()
+            {
+                return Dice.D12(2);
+            }
+        }
+
         public class Warhammer : BaseAction
         {
             public Warhammer()
@@ -24,7 +43,7 @@ namespace RegressionTest
 
             public override int Amount()
             {
-                return Dice.D8(CriticalHit ? 2 : 1) + 2;
+                return Dice.D8(CriticalHit ? 4 : 2) + Modifier;
             }
         }
 
@@ -41,7 +60,7 @@ namespace RegressionTest
 
             public override int Amount()
             {
-                return Dice.D8(CriticalHit ? 2 : 1) + 2;
+                return Dice.D8(CriticalHit ? 4 : 2) + Modifier;
             }
         }
 
@@ -129,11 +148,13 @@ namespace RegressionTest
             PostTurnNotify = true;
             TwilightSanctuaryRunning = false;
             SpiritGuardiansRunning = false;
+            WarCaster = true;
+            HasAdvantageOnInitiative = true;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 14, Mod = 2, Save = 2 });
-            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 8, Mod = -1, Save = -1 });
+            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 9, Mod = -1, Save = -1 });
             Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 3 });
-            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 10, Mod = 0, Save = 0 });
+            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 12, Mod = 1, Save = 1 });
             Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 20, Mod = 5, Save = 9 });
             Abilities.Add(AbilityScore.Charisma, new Stat { Score = 10, Mod = 0, Save = 4 });
         }
@@ -147,35 +168,40 @@ namespace RegressionTest
 
         public override BaseAction PickAction()
         {
-            if (Healer && !SpiritGuardiansRunning)
+            if (!SpiritGuardiansRunning)
             {
                 SpiritGuardiansRunning = true;
                 Concentrating = true;
-                return new SpiritGuardiansActivate { Owner = this };
+                return new SpiritGuardiansActivate();
             }
 
-            if (Healer && !TwilightSanctuaryRunning)
+            if (ShouldTwilight && Healer && !TwilightSanctuaryRunning)
             {
                 TwilightSanctuaryRunning = true;
-                return new TwilightSanctuaryActivate { Owner = this };
+                return new TwilightSanctuaryActivate();
             }
 
-            return new Warhammer { Owner = this };
+            if (Dice.D100() <= 50)
+            {
+                return new TollOfTheDead();
+            }
+
+            return new Warhammer();
         }
 
         public override BaseAction PickBonusAction()
         {
-            if (HealTarget != null)
+            if (Healer && HealTarget != null)
             {
-                return new HealingWord { Owner = this, Modifier = 5 };
+                return new HealingWord { Modifier = 5, Level = SpellAction.SpellLevel.Three };
             }
 
             if (Dice.D100() <= 90)
             {
-                return new SpiritualWeapon { Owner = this };
+                return new SpiritualWeapon();
             }
 
-            return new NoAction { Owner = this };
+            return new NoAction();
         }
 
         public override BaseAction PickPreTurn()
@@ -185,21 +211,21 @@ namespace RegressionTest
                 // we'll say that only 40% of the time an enemy is in range
                 if (Dice.D100() <= 40)
                 {
-                    return new SpiritGuardiansPreTurn { Owner = this };
+                    return new SpiritGuardiansPreTurn();
                 }
             }
 
-            return new NoAction { Owner = this };
+            return new NoAction();
         }
 
         public override BaseAction PickPostTurn()
         {
             if (TwilightSanctuaryRunning)
             {
-                return new TwilightSanctuaryPostTurn { Owner = this };
+                return new TwilightSanctuaryPostTurn();
             }
 
-            return new NoAction { Owner = this };
+            return new NoAction();
         }
 
         public override void OnFailConcentration()
@@ -207,6 +233,14 @@ namespace RegressionTest
             base.OnFailConcentration();
 
             SpiritGuardiansRunning = false;
+        }
+
+        public override void OnDeath()
+        {
+            base.OnDeath();
+
+            SpiritGuardiansRunning = false;
+            TwilightSanctuaryRunning = false;
         }
     }
 }

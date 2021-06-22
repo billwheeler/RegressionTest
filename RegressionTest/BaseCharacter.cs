@@ -61,6 +61,11 @@ namespace RegressionTest
 
         public Dictionary<AbilityScore, Stat> Abilities = new Dictionary<AbilityScore, Stat>();
 
+        public bool WarCaster { get; set; } = false;
+        public bool HasAdvantageOnInitiative { get; set; } = false;
+
+        public bool HasBless { get; set; } = false;
+
         public virtual BaseAttack PickAttack()
         {
             return null;
@@ -73,12 +78,13 @@ namespace RegressionTest
             Alive = true;
             TempHitPoints = 0;
             HealTarget = null;
+            HasAdvantageOnInitiative = false;
         }
 
         public void RollInitiative()
         {
             Init();
-            Initiative = Dice.D20() + InitMod;
+            Initiative = Dice.MakeAbilityRoll(HasAdvantageOnInitiative ? AbilityRoll.Advantage : AbilityRoll.Normal) + InitMod;
             Stats.Encounters++;
         }
 
@@ -100,7 +106,11 @@ namespace RegressionTest
         {
             if (Abilities.ContainsKey(score))
             {
-                return Dice.MakeAbilityRoll(rollType) + Abilities[score].Save >= dc;
+                int roll = Dice.MakeAbilityRoll(rollType) + Abilities[score].Save;
+                if (HasBless)
+                    roll += Dice.D4();
+
+                return roll >= dc;
             }
 
             return false;
@@ -117,7 +127,7 @@ namespace RegressionTest
             int dc = (int)Math.Floor(amount / 2.0f);
             if (dc < 10) dc = 10;
 
-            bool result = SavingThrow(AbilityScore.Constitution, dc);
+            bool result = SavingThrow(AbilityScore.Constitution, dc, WarCaster ? AbilityRoll.Advantage : AbilityRoll.Normal);
             if (!result)
             {
                 OnFailConcentration();
@@ -147,6 +157,7 @@ namespace RegressionTest
             {
                 Health = 0;
                 Alive = false;
+                OnDeath();
                 return false;
             }
 
@@ -205,29 +216,34 @@ namespace RegressionTest
             Concentrating = false;
         }
 
+        public virtual void OnDeath()
+        {
+            Concentrating = false;
+        }
+
         public virtual BaseAction PickAction()
         {
-            return new NoAction { Owner = this, Time = BaseAction.ActionTime.Action };
+            return new NoAction { Time = BaseAction.ActionTime.Action };
         }
 
         public virtual BaseAction PickBonusAction()
         {
-            return new NoAction { Owner = this, Time = BaseAction.ActionTime.BonusAction };
+            return new NoAction { Time = BaseAction.ActionTime.BonusAction };
         }
 
         public virtual BaseAction PickReaction()
         {
-            return new NoAction { Owner = this, Time = BaseAction.ActionTime.Reaction };
+            return new NoAction { Time = BaseAction.ActionTime.Reaction };
         }
 
         public virtual BaseAction PickPreTurn()
         {
-            return new NoAction { Owner = this, Time = BaseAction.ActionTime.PreTurn };
+            return new NoAction { Time = BaseAction.ActionTime.PreTurn };
         }
 
         public virtual BaseAction PickPostTurn()
         {
-            return new NoAction { Owner = this, Time = BaseAction.ActionTime.PostTurn };
+            return new NoAction { Time = BaseAction.ActionTime.PostTurn };
         }
     }
 }

@@ -9,7 +9,6 @@ namespace RegressionTest
     public abstract class BaseAction: IDisposable
     {
         public string Desc { get; set; }
-        public BaseCharacter Owner { get; set; } = null;
  
         public DiceRoller Dice { get; set; } = new DiceRoller();
         
@@ -62,7 +61,7 @@ namespace RegressionTest
 
         public DamageAmount Result { get; set; } = DamageAmount.None;
 
-        public virtual bool Hits(BaseCharacter target)
+        public virtual bool Hits(BaseCharacter attacker, BaseCharacter target)
         {
             CriticalHit = false;
             bool hits = false;
@@ -71,7 +70,7 @@ namespace RegressionTest
                 case ActionType.MeleeAttack:
                 case ActionType.RangedAttack:
                 case ActionType.SpellAttack:
-                    hits = AttackType(target);
+                    hits = AttackType(attacker, target);
                     Result = hits ? DamageAmount.Full : DamageAmount.None;
                     break;
 
@@ -81,6 +80,10 @@ namespace RegressionTest
                     {
                         Result = hits ? DamageAmount.Full : DamageAmount.Half;
                         hits = true;
+                    }
+                    else
+                    {
+                        Result = hits ? DamageAmount.Full : DamageAmount.None;
                     }
                     break;
 
@@ -103,13 +106,16 @@ namespace RegressionTest
             return hits;
         }
 
-        protected virtual bool AttackType(BaseCharacter target)
+        protected virtual bool AttackType(BaseCharacter attacker, BaseCharacter target)
         {
             CriticalHit = false;
             int roll = Dice.D20();
 
             if (roll >= CriticalThreshold)
                 CriticalHit = true;
+
+            if (attacker.HasBless)
+                roll += Dice.D4();
 
             return (roll + AttackModifier) >= target.AC ? true : false;
         }
@@ -208,8 +214,7 @@ namespace RegressionTest
 
         public override int Amount()
         {
-            int die = 1;
-
+            int die = (int)Level;
             return Dice.D4(die) + Modifier;
         }
     }

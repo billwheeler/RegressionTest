@@ -64,6 +64,7 @@
     <Compile Include="Tenraja.cs" />
     <Compile Include="Theory\Cleric.cs" />
     <Compile Include="Theory\Paladin.cs" />
+    <Compile Include="Theory\Ranger.cs" />
     <Compile Include="Theory\Rogue.cs" />
     <Compile Include="Wight.cs" />
   </ItemGroup>
