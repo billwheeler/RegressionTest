@@ -11,7 +11,7 @@ namespace RegressionTest
         public bool SpiritGuardiansRunning { get; set; }
         public bool TwilightSanctuaryRunning { get; set; }
 
-        public bool ShouldTwilight { get; set; } = true;
+        public bool ShouldTwilight { get; set; } = false;
 
         public class TollOfTheDead : BaseAction
         {
@@ -142,7 +142,7 @@ namespace RegressionTest
             MaxHealth = 83;
             Group = Team.TeamOne;
             Healer = true;
-            HealingThreshold = 30;
+            HealingThreshold = 18;
             Priority = HealPriority.High;
             PreTurnNotify = true;
             PostTurnNotify = true;

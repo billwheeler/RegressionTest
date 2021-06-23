@@ -78,7 +78,7 @@ namespace RegressionTest
             InitMod = 5;
             Health = SoulKnife ? 83 : 73;
             MaxHealth = SoulKnife ? 83 : 73;
-            HealingThreshold = 30;
+            HealingThreshold = 18;
             Group = Team.TeamOne;
             Healer = false;
             Priority = HealPriority.Medium;

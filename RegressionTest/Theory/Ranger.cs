@@ -72,11 +72,12 @@ namespace RegressionTest
             InitMod = 5;
             Health = 84;
             MaxHealth = 84;
-            HealingThreshold = 30;
+            HealingThreshold = 18;
             Group = Team.TeamOne;
-            Healer = true;
+            Healer = false;
             Priority = HealPriority.Medium;
             InitMod = 5;
+            BonusActionFirst = true;
 
             FavoredFoeRunning = false;
             PlanarWarriorRunning = false;
@@ -98,16 +99,16 @@ namespace RegressionTest
 
         public override BaseAction PickAction()
         {
-            return new Longbow { Time = BaseAction.ActionTime.Action, parent = this };
-        }
-
-        public override BaseAction PickBonusAction()
-        {
             if (Healer && HealTarget != null)
             {
                 return new CureWounds { Modifier = 3, Level = SpellAction.SpellLevel.Two };
             }
 
+            return new Longbow { Time = BaseAction.ActionTime.Action, parent = this };
+        }
+
+        public override BaseAction PickBonusAction()
+        {
             if (!PlanarWarriorRunning)
             {
                 PlanarWarriorRunning = true;
@@ -120,6 +121,18 @@ namespace RegressionTest
         public override void OnNewRound()
         {
             PlanarWarriorRunning = false;
+        }
+
+        public override void OnNewTurn()
+        {
+            if (Healer && HealTarget != null)
+            {
+                BonusActionFirst = false;
+            }
+            else
+            {
+                BonusActionFirst = true;
+            }
         }
 
         public override void OnFailConcentration()

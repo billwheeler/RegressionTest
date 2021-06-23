@@ -40,6 +40,7 @@ namespace RegressionTest
             enc.Add(new Rogue());
             enc.Add(new Cleric());
             enc.Add(new Paladin());
+            //enc.Add(new Fighter());
             enc.Add(new Ranger());
 
             enc.Add(new Nightwalker());

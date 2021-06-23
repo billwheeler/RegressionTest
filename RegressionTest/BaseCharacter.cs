@@ -63,8 +63,11 @@ namespace RegressionTest
 
         public bool WarCaster { get; set; } = false;
         public bool HasAdvantageOnInitiative { get; set; } = false;
+        public bool BonusActionFirst { get; set; } = false;
 
         public bool HasBless { get; set; } = false;
+
+        public Encounter Context { get; set; } = null;
 
         public virtual BaseAttack PickAttack()
         {
@@ -92,9 +95,6 @@ namespace RegressionTest
         {
             get
             {
-                if (Alive == false)
-                    return false;
-
                 if (Priority == HealPriority.Dont)
                     return false;
 
@@ -166,9 +166,6 @@ namespace RegressionTest
 
         public void Heal(int amount)
         {
-            if (!Alive)
-                return;
-
             Alive = true;
             Health += amount;
             if (Health > MaxHealth)
