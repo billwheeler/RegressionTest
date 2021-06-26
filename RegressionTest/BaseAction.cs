@@ -117,6 +117,8 @@ namespace RegressionTest
             if (attacker.HasBless)
                 roll += Dice.D4();
 
+            target.OnBeforeHitCalc(roll);
+
             return (roll + AttackModifier) >= target.AC ? true : false;
         }
 

@@ -47,6 +47,48 @@ namespace RegressionTest
             }
         }
 
+        public class Mace : BaseAction
+        {
+            public Mace()
+            {
+                Desc = "Mace";
+                Type = ActionType.MeleeAttack;
+                Time = ActionTime.Action;
+                AttackModifier = 6;
+                Modifier = 2;
+            }
+
+            public override int Amount()
+            {
+                return Dice.D6(CriticalHit ? 2 : 1) + Dice.D8(CriticalHit ? 2 : 1) + Modifier;
+            }
+        }
+
+        public class MaceBooming : BaseAction
+        {
+            public MaceBooming()
+            {
+                Desc = "Mace w/Booming Blade";
+                Type = ActionType.MeleeAttack;
+                Time = ActionTime.Action;
+                AttackModifier = 6;
+                Modifier = 2;
+            }
+
+            public override int Amount()
+            {
+                int damage = Dice.D6(CriticalHit ? 2 : 1) + Dice.D8(CriticalHit ? 2 : 1);
+
+                damage += Dice.D8(CriticalHit ? 2 : 1);
+                if (Dice.D100() <= 33)
+                {
+                    damage += Dice.D8(CriticalHit ? 4 : 2);
+                }
+
+                return damage + Modifier;
+            }
+        }
+
         public class SpiritualWeapon : BaseAction
         {
             public SpiritualWeapon()
@@ -129,6 +171,7 @@ namespace RegressionTest
 
             public override int Amount()
             {
+                //return Dice.D8();
                 return Dice.D6() + 10;
             }
         }
@@ -136,7 +179,7 @@ namespace RegressionTest
         public Cleric()
         {
             Name = "Leonid";
-            AC = 20;
+            AC = ShouldTwilight ? 20 : 21;
             InitMod = -1;
             Health = 83;
             MaxHealth = 83;
@@ -149,12 +192,12 @@ namespace RegressionTest
             TwilightSanctuaryRunning = false;
             SpiritGuardiansRunning = false;
             WarCaster = true;
-            HasAdvantageOnInitiative = true;
+            HasAdvantageOnInitiative = false;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 14, Mod = 2, Save = 2 });
-            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 9, Mod = -1, Save = -1 });
+            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 8, Mod = -1, Save = -1 });
             Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 3 });
-            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 12, Mod = 1, Save = 1 });
+            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 10, Mod = 0, Save = 0 });
             Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 20, Mod = 5, Save = 9 });
             Abilities.Add(AbilityScore.Charisma, new Stat { Score = 10, Mod = 0, Save = 4 });
         }
@@ -181,12 +224,15 @@ namespace RegressionTest
                 return new TwilightSanctuaryActivate();
             }
 
-            if (Dice.D100() <= 50)
+            if (Dice.D100() <= 75)
             {
                 return new TollOfTheDead();
             }
 
-            return new Warhammer();
+            if (ShouldTwilight)
+                return new Warhammer();
+            else
+                return new MaceBooming();
         }
 
         public override BaseAction PickBonusAction()

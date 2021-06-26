@@ -10,6 +10,24 @@ namespace RegressionTest
     {
         public bool SoulKnife { get; set; } = true;
 
+        public bool HuntersMarkRunning { get; set; } = false;
+        public bool CanHuntersMark { get; set; } = true;
+
+        public class HuntersMarkActivate : BaseAction
+        {
+            public HuntersMarkActivate()
+            {
+                Desc = "Hunter's Mark";
+                Type = ActionType.Activate;
+                Time = ActionTime.BonusAction;
+            }
+
+            public override int Amount()
+            {
+                return 0;
+            }
+        }
+
         public class Shortsword : BaseAction
         {
             public Rogue parent { get; set; }
@@ -30,6 +48,11 @@ namespace RegressionTest
                 {
                     damage += Dice.D6(CriticalHit ? 10 : 5);
                     parent.DidSneakAttack = true;
+                }
+
+                if (parent.HuntersMarkRunning)
+                {
+                    damage += Dice.D6(CriticalHit ? 2 : 1);
                 }
 
                 if (Time == ActionTime.Action)
@@ -61,8 +84,11 @@ namespace RegressionTest
 
                 if (!parent.DidSneakAttack)
                 {
-                    damage += Dice.D6(CriticalHit ? 10 : 5);
-                    parent.DidSneakAttack = true;
+                    if (Dice.D100() <= 95)
+                    {
+                        damage += Dice.D6(CriticalHit ? 10 : 5);
+                        parent.DidSneakAttack = true;
+                    }
                 }
 
                 return damage + Modifier;
@@ -74,10 +100,10 @@ namespace RegressionTest
         public Rogue()
         {
             Name = "Amxikas";
-            AC = 17;
-            InitMod = 5;
-            Health = SoulKnife ? 83 : 73;
-            MaxHealth = SoulKnife ? 83 : 73;
+            AC = SoulKnife ? 18 : 17;
+            InitMod = SoulKnife ? 5 : 7;
+            Health = 83;
+            MaxHealth = 83;
             HealingThreshold = 18;
             Group = Team.TeamOne;
             Healer = false;
@@ -97,10 +123,10 @@ namespace RegressionTest
             {
                 Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 0 });
                 Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 20, Mod = 5, Save = 9 });
-                Abilities.Add(AbilityScore.Constitution, new Stat { Score = 14, Mod = 2, Save = 2 });
+                Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 3 });
                 Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 8, Mod = -1, Save = 3 });
-                Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 12, Mod = 1, Save = 1 });
-                Abilities.Add(AbilityScore.Charisma, new Stat { Score = 16, Mod = 3, Save = 3 });
+                Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 10, Mod = 0, Save = 0 });
+                Abilities.Add(AbilityScore.Charisma, new Stat { Score = 14, Mod = 2, Save = 2 });
             }
         }
 
@@ -108,11 +134,29 @@ namespace RegressionTest
         {
             base.Init();
             DidSneakAttack = false;
+            CanHuntersMark = true;
+            HuntersMarkRunning = false;
         }
 
         public override void OnNewTurn()
         {
             DidSneakAttack = false;
+
+            if (CanHuntersMark && !HuntersMarkRunning)
+            {
+                BonusActionFirst = true;
+            }
+            else
+            {
+                BonusActionFirst = false;
+            }
+        }
+
+        public override void OnFailConcentration()
+        {
+            base.OnFailConcentration();
+
+            if (HuntersMarkRunning) HuntersMarkRunning = false;
         }
 
         public override BaseAction PickAction()
@@ -127,6 +171,13 @@ namespace RegressionTest
         {
             if (SoulKnife)
                 return new SoulDagger { Time = BaseAction.ActionTime.BonusAction, parent = this };
+            else if (CanHuntersMark && !HuntersMarkRunning)
+            {
+                CanHuntersMark = false;
+                HuntersMarkRunning = false;
+                Concentrating = true;
+                return new HuntersMarkActivate();
+            }
 
             return new Shortsword { Time = BaseAction.ActionTime.BonusAction, parent = this };
         }

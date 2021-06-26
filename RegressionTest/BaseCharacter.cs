@@ -218,6 +218,10 @@ namespace RegressionTest
             Concentrating = false;
         }
 
+        public virtual void OnBeforeHitCalc(int roll)
+        {
+        }
+
         public virtual BaseAction PickAction()
         {
             return new NoAction { Time = BaseAction.ActionTime.Action };

@@ -63,6 +63,7 @@
     <Compile Include="Template.cs" />
     <Compile Include="Tenraja.cs" />
     <Compile Include="Theory\Cleric.cs" />
+    <Compile Include="Theory\DivineSorlock.cs" />
     <Compile Include="Theory\Fighter.cs" />
     <Compile Include="Theory\Paladin.cs" />
     <Compile Include="Theory\Ranger.cs" />

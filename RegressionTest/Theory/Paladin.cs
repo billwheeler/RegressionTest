@@ -45,7 +45,8 @@ namespace RegressionTest
                     damage += Dice.D8(number);
                 }
 
-                damage += Dice.D8(CriticalHit ? 2 : 1);
+                // divine strike comes online at level 11
+                //damage += Dice.D8(CriticalHit ? 2 : 1);
 
                 return damage + Modifier;
             }
@@ -86,21 +87,6 @@ namespace RegressionTest
             }
         }
 
-        public class SacredWeaponActivate : BaseAction
-        {
-            public SacredWeaponActivate()
-            {
-                Desc = "Sacred Weapon";
-                Type = ActionType.Activate;
-                Time = ActionTime.Action;
-            }
-
-            public override int Amount()
-            {
-                return 0;
-            }
-        }
-
         public class SpiritShroudActivate : BaseAction
         {
             public SpiritShroudActivate()
@@ -116,9 +102,10 @@ namespace RegressionTest
             }
         }
 
+        public bool ShouldBless { get; set; } = false;
+
         public bool CanBonusActionAttack { get; set; } = false;
         public bool BlessRunning { get; set; } = false;
-        public bool SacredWeaponRunning { get; set; } = false;
         public bool SpiritShroudRunning { get; set; } = false;
         public int LayOnHandsPool { get; set; } = 50;
 
@@ -130,7 +117,7 @@ namespace RegressionTest
             MaxHealth = 94;
             HealingThreshold = 18;
             Group = Team.TeamOne;
-            Healer = true;
+            Healer = false;
             Priority = HealPriority.Medium;
             InitMod = 0;
             WarCaster = false;
@@ -147,7 +134,6 @@ namespace RegressionTest
         {
             base.Init();
             BlessRunning = false;
-            SacredWeaponRunning = false;
             SpiritShroudRunning = false;
             LayOnHandsPool = 50;
             CanBonusActionAttack = false;
@@ -155,7 +141,7 @@ namespace RegressionTest
 
         public override BaseAction PickAction()
         {
-            if (false && !BlessRunning)
+            if (ShouldBless && !BlessRunning)
             {
                 Concentrating = true;
                 BlessRunning = true;
@@ -168,14 +154,8 @@ namespace RegressionTest
                 return new LayOnHands { parent = this };
             }
 
-            if (false && !SacredWeaponRunning)
-            {
-                SacredWeaponRunning = true;
-                return new SacredWeaponActivate();
-            }
-
             CanBonusActionAttack = true;
-            return new GlaivePM { Time = BaseAction.ActionTime.Action, TotalToRun = 2, parent = this, AttackModifier = SacredWeaponRunning ? 12 : 9 };
+            return new GlaivePM { Time = BaseAction.ActionTime.Action, TotalToRun = 2, parent = this, AttackModifier = 9 };
         }
 
         public override BaseAction PickBonusAction()
@@ -188,7 +168,7 @@ namespace RegressionTest
             }
 
             if (CanBonusActionAttack)
-                return new GlaivePM { Time = BaseAction.ActionTime.BonusAction, TotalToRun = 1, parent = this, AttackModifier = SacredWeaponRunning ? 12 : 9 };
+                return new GlaivePM { Time = BaseAction.ActionTime.BonusAction, TotalToRun = 1, parent = this, AttackModifier = 9 };
 
             return new NoAction { Time = BaseAction.ActionTime.BonusAction };
         }
@@ -200,7 +180,11 @@ namespace RegressionTest
 
         public override void OnNewTurn()
         {
-            if (!SpiritShroudRunning)
+            if (ShouldBless && !BlessRunning)
+            {
+                BonusActionFirst = false;
+            }
+            else if (!Concentrating && !SpiritShroudRunning)
             {
                 BonusActionFirst = Healer && HealTarget != null ? false : true;
             }

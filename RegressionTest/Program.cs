@@ -39,23 +39,24 @@ namespace RegressionTest
 
             enc.Add(new Rogue());
             enc.Add(new Cleric());
+            //enc.Add(new DivineSorlock());
             enc.Add(new Paladin());
             //enc.Add(new Fighter());
             enc.Add(new Ranger());
 
-            enc.Add(new Nightwalker());
-            enc.Add(new Wight());
-            enc.Add(new Wight());
-            enc.Add(new Wight());
+            //enc.Add(new Nightwalker());
+            //enc.Add(new Wight());
+            //enc.Add(new Wight());
+            //enc.Add(new Wight());
 
-            //enc.Add(new Hellwasp { Name = "Hellwasp #1" });
-            //enc.Add(new Hellwasp { Name = "Hellwasp #2" });
-            //enc.Add(new Hellwasp { Name = "Hellwasp #3" });
-            //enc.Add(new Hellwasp { Name = "Hellwasp #4" });
-            //enc.Add(new Hellwasp { Name = "Hellwasp #5" });
-            //enc.Add(new Hellwasp { Name = "Hellwasp #6" });
-            //enc.Add(new Hellwasp { Name = "Hellwasp #7" });
-            //enc.Add(new Hellwasp { Name = "Hellwasp #8" });
+            enc.Add(new Hellwasp { Name = "Hellwasp #1" });
+            enc.Add(new Hellwasp { Name = "Hellwasp #2" });
+            enc.Add(new Hellwasp { Name = "Hellwasp #3" });
+            enc.Add(new Hellwasp { Name = "Hellwasp #4" });
+            enc.Add(new Hellwasp { Name = "Hellwasp #5" });
+            enc.Add(new Hellwasp { Name = "Hellwasp #6" });
+            enc.Add(new Hellwasp { Name = "Hellwasp #7" });
+            enc.Add(new Hellwasp { Name = "Hellwasp #8" });
             //enc.Add(new Hellwasp { Name = "Hellwasp #9" });
             //enc.Add(new Hellwasp { Name = "Hellwasp #10" });
 
