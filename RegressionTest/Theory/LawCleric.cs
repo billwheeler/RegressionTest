@@ -6,25 +6,49 @@ using System.Threading.Tasks;
 
 namespace RegressionTest
 {
-    public class DivineSorlock : BaseCharacter
+    public class LawCleric : BaseCharacter
     {
         public bool SpiritGuardiansRunning { get; set; }
 
-        public class EldritchBlast : BaseAction
+        public class TollOfTheDead : BaseAction
         {
-            public EldritchBlast()
+            public TollOfTheDead()
             {
-                Desc = "Eldritch Blast";
-                Type = ActionType.SpellAttack;
+                Desc = "Toll of the Dead";
+                Type = ActionType.SpellSave;
                 Time = ActionTime.Action;
-                AttackModifier = 9;
-                Modifier = 5;
-                TotalToRun = 2;
+                Ability = AbilityScore.Wisdom;
+                DC = 17;
             }
 
             public override int Amount()
             {
-                return Dice.D10(CriticalHit ? 2 : 1) + Modifier;
+                return Dice.D12(2);
+            }
+        }
+
+        public class Warhammer : BaseAction
+        {
+            public Warhammer()
+            {
+                Desc = "Warhammer w/Booming Blade";
+                Type = ActionType.MeleeAttack;
+                Time = ActionTime.Action;
+                AttackModifier = 6;
+                Modifier = 2;
+            }
+
+            public override int Amount()
+            {
+                int damage = Dice.D8(CriticalHit ? 4 : 2);
+
+                damage += Dice.D8(CriticalHit ? 2 : 1);
+                if (Dice.D100() <= 33)
+                {
+                    damage += Dice.D8(CriticalHit ? 4 : 2);
+                }
+
+                return damage + Modifier;
             }
         }
 
@@ -84,13 +108,13 @@ namespace RegressionTest
             }
         }
 
-        public DivineSorlock()
+        public LawCleric()
         {
-            Name = "Ammareth";
-            AC = 19;
-            InitMod = 2;
-            Health = 74;
-            MaxHealth = 74;
+            Name = "Leonid";
+            AC = 20;
+            InitMod = -1;
+            Health = 83;
+            MaxHealth = 83;
             Group = Team.TeamOne;
             Healer = true;
             HealingThreshold = 18;
@@ -98,15 +122,14 @@ namespace RegressionTest
             PreTurnNotify = true;
             PostTurnNotify = true;
             SpiritGuardiansRunning = false;
-            WarCaster = true;
             MyType = CreatureType.PC;
 
-            Abilities.Add(AbilityScore.Strength, new Stat { Score = 9, Mod = -1, Save = -1 });
-            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 14, Mod = 2, Save = 2 });
-            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 7 });
+            Abilities.Add(AbilityScore.Strength, new Stat { Score = 16, Mod = 3, Save = 3 });
+            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 9, Mod = -1, Save = -1 });
+            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 3 });
             Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 10, Mod = 0, Save = 0 });
-            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 12, Mod = 1, Save = 1 });
-            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 20, Mod = 5, Save = 9 });
+            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 20, Mod = 5, Save = 9 });
+            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 10, Mod = 0, Save = 4 });
         }
 
         public override void Init()
@@ -124,7 +147,18 @@ namespace RegressionTest
                 return new SpiritGuardiansActivate();
             }
 
-            return new EldritchBlast();
+            int rando = Dice.D100();
+            if (rando >= 67)
+            {
+                return new TollOfTheDead();
+            }
+            else if (rando < 67 && rando >= 33)
+            {
+                IsDodging = true;
+                return new DodgeAction();
+            }
+
+            return new Warhammer();
         }
 
         public override BaseAction PickBonusAction()
@@ -170,22 +204,5 @@ namespace RegressionTest
 
             SpiritGuardiansRunning = false;
         }
-
-        public override void OnNewRound()
-        {
-            base.OnNewRound();
-
-            AC = 19;
-        }
-
-        public override void OnBeforeHitCalc(int roll)
-        {
-            // cast shield!
-            if (roll >= 15 && AC == 19)
-            {
-                AC = 24;
-            }
-        }
     }
-
 }

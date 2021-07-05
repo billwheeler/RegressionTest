@@ -78,6 +78,7 @@ namespace RegressionTest
             Priority = HealPriority.Medium;
             InitMod = 5;
             BonusActionFirst = true;
+            MyType = CreatureType.PC;
 
             FavoredFoeRunning = false;
             PlanarWarriorRunning = false;
@@ -120,6 +121,7 @@ namespace RegressionTest
 
         public override void OnNewRound()
         {
+            base.OnNewRound();
             PlanarWarriorRunning = false;
         }
 

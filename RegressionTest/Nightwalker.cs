@@ -66,6 +66,7 @@ namespace RegressionTest
             MaxHealth = 297;
             Group = Team.TeamTwo;
             PreTurnNotify = true;
+            HighValueTarget = true;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 22, Mod = 6, Save = 6 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 19, Mod = 4, Save = 4 });
@@ -88,7 +89,7 @@ namespace RegressionTest
             return new NoAction();
         }
 
-        public override BaseAction PickPreTurn()
+        public override BaseAction PickPreTurn(BaseCharacter target)
         {
             // we'll say that only 67% of the time an enemy is in range
             if (Dice.D100() <= 67)

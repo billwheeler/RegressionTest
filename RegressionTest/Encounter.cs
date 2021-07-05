@@ -40,6 +40,7 @@ namespace RegressionTest
             Round = 1;
             OutputAttacks = true;
             AllowHealing = true;
+            Dice = new DiceRoller();
 
             Players = new TeamStats
             {
@@ -88,7 +89,23 @@ namespace RegressionTest
 
         public List<BaseCharacter> CurrentEnemies(Team group)
         {
-            return Characters.Where(c => c.Group != group && c.Alive).ToList();
+            List<BaseCharacter> result = new List<BaseCharacter>();
+
+            for (int i = 0; i < Characters.Count; i++)
+            {
+                if (Characters[i].Group == group)
+                    continue;
+
+                if (!Characters[i].Alive)
+                    continue;
+
+                if (Characters[i].MyType == CreatureType.Summon && !Characters[i].BeenSummoned)
+                    continue;
+
+                result.Add(Characters[i]);
+            }
+
+            return result;
         }
 
         public List<BaseCharacter> TeamMembers(Team group)
@@ -116,8 +133,35 @@ namespace RegressionTest
         {
             for (int i = 0; i < Characters.Count; i++)
             {
-                if (Characters[i].Group == group)
+                if (Characters[i].Group == group && Characters[i].Alive)
                     Characters[i].HasBless = on;
+            }
+        }
+
+        public void GiveTempHP(Team group, int amount = 0)
+        {
+            for (int i = 0; i < Characters.Count; i++)
+            {
+                if (Characters[i].Group == group && Characters[i].Alive && Characters[i].MyType != CreatureType.Summon)
+                    Characters[i].SetTempHitPoints(amount);
+            }
+        }
+
+        public void ActivateSummons(Team group)
+        {
+            for (int i = 0; i < Characters.Count; i++)
+            {
+                if (Characters[i].Group == group && Characters[i].MyType == CreatureType.Summon)
+                    Characters[i].BeenSummoned = true;
+            }
+        }
+
+        public void DeactivateSummons(Team group)
+        {
+            for (int i = 0; i < Characters.Count; i++)
+            {
+                if (Characters[i].Group == group && Characters[i].MyType == CreatureType.Summon)
+                    Characters[i].BeenSummoned = false;
             }
         }
 
@@ -126,6 +170,12 @@ namespace RegressionTest
             List<BaseCharacter> enemies = CurrentEnemies(group);
             if (enemies.Count > 0)
             {
+                for (int i = 0; i < Characters.Count; i++)
+                {
+                    if (Characters[i].Group != group && Characters[i].HighValueTarget && Characters[i].Alive && Dice.D100() >= 80)
+                        return i;
+                }
+
                 int id = enemies[new Random().Next(enemies.Count)].ID;
                 for (int i = 0; i < Characters.Count; i++)
                 {
@@ -152,31 +202,42 @@ namespace RegressionTest
             return -1;
         }
 
-        delegate void ActionDelegate(string s);
-
         public bool ProcessAction(BaseAction action, int me, int target = -1)
         {
             if (action.Type == BaseAction.ActionType.Heal)
             {
                 int amount = action.Amount();
 
-                if (!Characters[me].HealTarget.Alive)
-                    Characters[me].HealTarget.Stats.Deaths--;
+                if (target > -1)
+                {
+                    Characters[target].Heal(amount);
+                    if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}] heals {2} for {3}hp.",
+                        Characters[me].Name,
+                        Characters[me].GetHealthDesc(),
+                        Characters[target].Name,
+                        amount
+                    ));
+                }
+                else
+                {
+                    if (!Characters[me].HealTarget.Alive)
+                        Characters[me].HealTarget.Stats.Deaths--;
 
-                Characters[me].HealTarget.Heal(amount);
-                Characters[me].Stats.Healed += amount;
+                    Characters[me].HealTarget.Heal(amount);
+                    Characters[me].Stats.Healed += amount;
 
-                if (Characters[me].Group == Team.TeamOne)
-                    Players.TotalHealing += amount;
-                else if (Characters[me].Group == Team.TeamTwo)
-                    Baddies.TotalHealing += amount;
+                    if (Characters[me].Group == Team.TeamOne)
+                        Players.TotalHealing += amount;
+                    else if (Characters[me].Group == Team.TeamTwo)
+                        Baddies.TotalHealing += amount;
 
-                if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}] heals {2} for {3}hp.",
-                    Characters[me].Name,
-                    Characters[me].GetHealthDesc(),
-                    Characters[me].HealTarget.Name,
-                    amount
-                ));
+                    if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}] heals {2} for {3}hp.",
+                        Characters[me].Name,
+                        Characters[me].GetHealthDesc(),
+                        Characters[me].HealTarget.Name,
+                        amount
+                    ));
+                }
             }
             else if (action.Type == BaseAction.ActionType.GrantTempHp)
             {
@@ -307,6 +368,11 @@ namespace RegressionTest
                     {
                         Characters[me].Stats.Hits++;
                         damage = action.Amount();
+                        if (action.DidSpecial)
+                        {
+                            damage += 10;
+                        }
+
                         Characters[me].Stats.DamageGiven += damage;
                         Characters[enemy].Stats.DamageTaken += damage;
                         survives = Characters[enemy].TakeDamage(damage);
@@ -333,6 +399,8 @@ namespace RegressionTest
                          concentration
                     ));
 
+                    action.PostAttack();
+
                     if (!survives)
                     {
                         Characters[enemy].Stats.Deaths++;
@@ -350,6 +418,9 @@ namespace RegressionTest
 
         public bool ProcessRound()
         {
+            // make sure any new summons end up in the right place
+            Characters.Sort(new InitSort());
+
             bool result = true;
             if (OutputAttacks) Console.WriteLine(string.Format("\n--- Encounter Round {0} --- ", Round));
 
@@ -357,6 +428,11 @@ namespace RegressionTest
             {
                 // am dead, am big cat no more
                 if (!Characters[me].Alive)
+                {
+                    continue;
+                }
+
+                if (Characters[me].MyType == CreatureType.Summon && Characters[me].BeenSummoned == false)
                 {
                     continue;
                 }
@@ -387,7 +463,7 @@ namespace RegressionTest
                 foreach (int id in PreTurnChars)
                 {
                     int idx = GetIndexByID(id);
-                    BaseAction preAction = Characters[idx].PickPreTurn();
+                    BaseAction preAction = Characters[idx].PickPreTurn(Characters[me]);
                     if (!ProcessAction(preAction, idx, me))
                     {
                         if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
@@ -451,7 +527,7 @@ namespace RegressionTest
                     foreach (int id in PostTurnChars)
                     {
                         int idx = GetIndexByID(id);
-                        BaseAction postAction = Characters[idx].PickPostTurn();
+                        BaseAction postAction = Characters[idx].PickPostTurn(Characters[me]);
                         if (!ProcessAction(postAction, idx, me))
                         {
                             if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");

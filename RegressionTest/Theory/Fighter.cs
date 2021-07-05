@@ -21,6 +21,7 @@ namespace RegressionTest
                 Type = ActionType.MeleeAttack;
                 AttackModifier = 9;
                 Modifier = 5;
+                CanGreatWeaponMaster = true;
             }
 
             public override int Amount()
@@ -50,9 +51,11 @@ namespace RegressionTest
             MaxHealth = 94;
             HealingThreshold = 18;
             Group = Team.TeamOne;
-            Healer = true;
+            Healer = false;
             Priority = HealPriority.Medium;
             InitMod = 0;
+            MyType = CreatureType.PC;
+            GreatWeaponMaster = true;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 20, Mod = 5, Save = 9 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 10, Mod = 0, Save = 0 });

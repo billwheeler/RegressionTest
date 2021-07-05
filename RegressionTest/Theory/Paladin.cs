@@ -16,7 +16,6 @@ namespace RegressionTest
             {
                 Desc = "Spear";
                 Type = ActionType.MeleeAttack;
-                AttackModifier = 9;
                 Modifier = 7;
             }
 
@@ -32,6 +31,8 @@ namespace RegressionTest
                 {
                     damage += Dice.D8(CriticalHit ? 2 : 1);
                 }
+
+                //Console.WriteLine($"Sacred Weapon: {parent.SacredBladeRunning}, Attack: {AttackModifier}");
 
                 // divine smite
                 if (Dice.D100() <= (CriticalHit ? 50 : 15))
@@ -72,11 +73,11 @@ namespace RegressionTest
             }
         }
 
-        public class BlessActivate : BaseAction
+        public class SacredBladeActivate : BaseAction
         {
-            public BlessActivate()
+            public SacredBladeActivate()
             {
-                Desc = "Bless";
+                Desc = "Sacred Weapon";
                 Type = ActionType.Activate;
                 Time = ActionTime.Action;
             }
@@ -102,10 +103,8 @@ namespace RegressionTest
             }
         }
 
-        public bool ShouldBless { get; set; } = false;
-
         public bool CanBonusActionAttack { get; set; } = false;
-        public bool BlessRunning { get; set; } = false;
+        public bool SacredBladeRunning { get; set; } = false;
         public bool SpiritShroudRunning { get; set; } = false;
         public int LayOnHandsPool { get; set; } = 50;
 
@@ -121,6 +120,7 @@ namespace RegressionTest
             Priority = HealPriority.Medium;
             InitMod = 0;
             WarCaster = false;
+            MyType = CreatureType.PC;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 20, Mod = 5, Save = 8 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 10, Mod = 0, Save = 3 });
@@ -133,7 +133,7 @@ namespace RegressionTest
         public override void Init()
         {
             base.Init();
-            BlessRunning = false;
+            SacredBladeRunning = false;
             SpiritShroudRunning = false;
             LayOnHandsPool = 50;
             CanBonusActionAttack = false;
@@ -141,12 +141,10 @@ namespace RegressionTest
 
         public override BaseAction PickAction()
         {
-            if (ShouldBless && !BlessRunning)
+            if (!SacredBladeRunning)
             {
-                Concentrating = true;
-                BlessRunning = true;
-                Context.SetBless(Group, true);
-                return new BlessActivate();
+                SacredBladeRunning = true;
+                return new SacredBladeActivate();
             }
 
             if (HealTarget != null && LayOnHandsPool > 0 && Dice.D100() <= 33)
@@ -155,7 +153,7 @@ namespace RegressionTest
             }
 
             CanBonusActionAttack = true;
-            return new GlaivePM { Time = BaseAction.ActionTime.Action, TotalToRun = 2, parent = this, AttackModifier = 9 };
+            return new GlaivePM { Time = BaseAction.ActionTime.Action, TotalToRun = 2, parent = this, AttackModifier = SacredBladeRunning ? 12 : 9 };
         }
 
         public override BaseAction PickBonusAction()
@@ -168,19 +166,20 @@ namespace RegressionTest
             }
 
             if (CanBonusActionAttack)
-                return new GlaivePM { Time = BaseAction.ActionTime.BonusAction, TotalToRun = 1, parent = this, AttackModifier = 9 };
+                return new GlaivePM { Time = BaseAction.ActionTime.BonusAction, TotalToRun = 1, parent = this, AttackModifier = SacredBladeRunning ? 12 : 9 };
 
             return new NoAction { Time = BaseAction.ActionTime.BonusAction };
         }
 
         public override void OnNewRound()
         {
+            base.OnNewRound();
             CanBonusActionAttack = false;
         }
 
         public override void OnNewTurn()
         {
-            if (ShouldBless && !BlessRunning)
+            if (!SacredBladeRunning)
             {
                 BonusActionFirst = false;
             }
@@ -198,18 +197,15 @@ namespace RegressionTest
         {
             base.OnFailConcentration();
 
-            if (BlessRunning)
-            {
-                Context.SetBless(Group, false);
-                BlessRunning = false;
-            }
-
             if (SpiritShroudRunning) SpiritShroudRunning = false;
         }
 
         public override void OnDeath()
         {
             base.OnDeath();
+
+            SacredBladeRunning = false;
+            SpiritShroudRunning = false;
         }
     }
 }

@@ -43,22 +43,23 @@ namespace RegressionTest
             enc.Add(new Paladin());
             //enc.Add(new Fighter());
             enc.Add(new Ranger());
+            
+            /*enc.Add(new Druid());
+            for (int i = 1; i <= 4; i++)
+            {
+                enc.Add(new Satyr { Name = $"Satyr #{i}" });
+            }*/
 
-            //enc.Add(new Nightwalker());
-            //enc.Add(new Wight());
-            //enc.Add(new Wight());
-            //enc.Add(new Wight());
+            /*enc.Add(new Nightwalker());
+            for (int i = 1; i <= 3; i++)
+            {
+                enc.Add(new Wight { Name = $"Wight #{i}" });
+            }*/
 
-            enc.Add(new Hellwasp { Name = "Hellwasp #1" });
-            enc.Add(new Hellwasp { Name = "Hellwasp #2" });
-            enc.Add(new Hellwasp { Name = "Hellwasp #3" });
-            enc.Add(new Hellwasp { Name = "Hellwasp #4" });
-            enc.Add(new Hellwasp { Name = "Hellwasp #5" });
-            enc.Add(new Hellwasp { Name = "Hellwasp #6" });
-            enc.Add(new Hellwasp { Name = "Hellwasp #7" });
-            enc.Add(new Hellwasp { Name = "Hellwasp #8" });
-            //enc.Add(new Hellwasp { Name = "Hellwasp #9" });
-            //enc.Add(new Hellwasp { Name = "Hellwasp #10" });
+            for (int i = 1; i <= 8; i++)
+            {
+                enc.Add(new Hellwasp { Name = $"Hellwasp #{i}" });
+            }
 
             return enc;
         }

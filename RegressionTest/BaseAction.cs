@@ -9,6 +9,7 @@ namespace RegressionTest
     public abstract class BaseAction: IDisposable
     {
         public string Desc { get; set; }
+        public string BackupDesc { get; set; }
  
         public DiceRoller Dice { get; set; } = new DiceRoller();
         
@@ -23,6 +24,11 @@ namespace RegressionTest
         public bool CriticalHit { get; set; } = false;
         public int CriticalThreshold { get; set; } = 20;
         public bool HalfDamageOnMiss { get; set; } = false;
+
+        public bool CanSharpshoopter { get; set; } = false;
+        public bool CanGreatWeaponMaster { get; set; } = false;
+
+        public bool DidSpecial { get; set; } = false;
 
         public AbilityScore Ability { get; set; } = AbilityScore.Wisdom;
         public int DC { get; set; } = 10;
@@ -109,7 +115,34 @@ namespace RegressionTest
         protected virtual bool AttackType(BaseCharacter attacker, BaseCharacter target)
         {
             CriticalHit = false;
-            int roll = Dice.D20();
+            var abilityRoll = AbilityRoll.Normal;
+
+            BackupDesc = Desc;
+
+            if (target.IsDodging)
+                abilityRoll = AbilityRoll.Disadvantage;
+
+            int mod = AttackModifier;
+            if (CanSharpshoopter && attacker.Sharpshooter)
+            {
+                if (target.AC > 13 && Dice.D100() <= 50)
+                {
+                    Desc += " (SS)";
+                    mod = attacker.Proficiency;
+                    DidSpecial = true;
+                }
+            }
+            else if (CanGreatWeaponMaster && attacker.GreatWeaponMaster)
+            {
+                if (target.AC > 13 && Dice.D100() <= 50)
+                {
+                    Desc += " (GWN)";
+                    mod = attacker.Proficiency;
+                    DidSpecial = true;
+                }
+            }
+
+            int roll = Dice.MakeAbilityRoll(abilityRoll);
 
             if (roll >= CriticalThreshold)
                 CriticalHit = true;
@@ -119,7 +152,7 @@ namespace RegressionTest
 
             target.OnBeforeHitCalc(roll);
 
-            return (roll + AttackModifier) >= target.AC ? true : false;
+            return (roll + mod) >= target.AC ? true : false;
         }
 
         public abstract int Amount();
@@ -142,6 +175,12 @@ namespace RegressionTest
 
         public void Dispose()
         {
+        }
+
+        public void PostAttack()
+        {
+            DidSpecial = false;
+            Desc = BackupDesc;
         }
     }
 
@@ -250,6 +289,21 @@ namespace RegressionTest
             int die = 4;
 
             return Dice.D6(die) + Modifier;
+        }
+    }
+
+    public class DodgeAction : SpellAction
+    {
+        public DodgeAction()
+        {
+            Desc = "Dodge";
+            Level = SpellLevel.One;
+            Type = ActionType.Activate;
+        }
+
+        public override int Amount()
+        {
+            return 0;
         }
     }
 }

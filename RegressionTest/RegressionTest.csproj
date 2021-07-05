@@ -64,10 +64,13 @@
     <Compile Include="Tenraja.cs" />
     <Compile Include="Theory\Cleric.cs" />
     <Compile Include="Theory\DivineSorlock.cs" />
+    <Compile Include="Theory\Druid.cs" />
     <Compile Include="Theory\Fighter.cs" />
+    <Compile Include="Theory\LawCleric.cs" />
     <Compile Include="Theory\Paladin.cs" />
     <Compile Include="Theory\Ranger.cs" />
     <Compile Include="Theory\Rogue.cs" />
+    <Compile Include="Theory\Satyr.cs" />
     <Compile Include="Wight.cs" />
   </ItemGroup>
   <ItemGroup>

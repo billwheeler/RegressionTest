@@ -8,10 +8,8 @@ namespace RegressionTest
 {
     public class Rogue : BaseCharacter
     {
-        public bool SoulKnife { get; set; } = true;
-
         public bool HuntersMarkRunning { get; set; } = false;
-        public bool CanHuntersMark { get; set; } = true;
+        public bool CanHuntersMark { get; set; } = false;
 
         public class HuntersMarkActivate : BaseAction
         {
@@ -25,6 +23,39 @@ namespace RegressionTest
             public override int Amount()
             {
                 return 0;
+            }
+        }
+
+        public class Soulblades : BaseAction
+        {
+            public Rogue parent { get; set; }
+
+            public Soulblades()
+            {
+                Desc = "Soul Blades";
+                Type = ActionType.MeleeAttack;
+                AttackModifier = 9;
+                Modifier = 5;
+            }
+
+            public override int Amount()
+            {
+                int damage = Time == ActionTime.Action ?
+                    Dice.D4(CriticalHit ? 4 : 2) :
+                    Dice.D4(CriticalHit ? 2 : 1);
+
+                if (!parent.DidSneakAttack)
+                {
+                    damage += Dice.D6(CriticalHit ? 10 : 5);
+                    parent.DidSneakAttack = true;
+                }
+
+                if (parent.HuntersMarkRunning)
+                {
+                    damage += Dice.D6(CriticalHit ? 2 : 1);
+                }
+
+                return damage += Modifier;
             }
         }
 
@@ -64,13 +95,13 @@ namespace RegressionTest
             }
         }
 
-        public class SoulDagger : BaseAction
+        public class Dagger : BaseAction
         {
             public Rogue parent { get; set; }
 
-            public SoulDagger()
+            public Dagger()
             {
-                Desc = "Soul Dagger";
+                Desc = "Dagger";
                 Type = ActionType.MeleeAttack;
                 AttackModifier = 9;
                 Modifier = 5;
@@ -78,20 +109,25 @@ namespace RegressionTest
 
             public override int Amount()
             {
-                int damage = Time == ActionTime.Action ?
-                    Dice.D4(CriticalHit ? 4 : 2) :
-                    Dice.D4(CriticalHit ? 2 : 1);
+                int damage = Dice.D4(CriticalHit ? 2 : 1);
 
                 if (!parent.DidSneakAttack)
                 {
-                    if (Dice.D100() <= 95)
-                    {
-                        damage += Dice.D6(CriticalHit ? 10 : 5);
-                        parent.DidSneakAttack = true;
-                    }
+                    damage += Dice.D6(CriticalHit ? 10 : 5);
+                    parent.DidSneakAttack = true;
                 }
 
-                return damage + Modifier;
+                if (parent.HuntersMarkRunning)
+                {
+                    damage += Dice.D6(CriticalHit ? 2 : 1);
+                }
+
+                if (Time == ActionTime.Action)
+                {
+                    damage += Modifier;
+                }
+
+                return damage;
             }
         }
 
@@ -100,8 +136,8 @@ namespace RegressionTest
         public Rogue()
         {
             Name = "Amxikas";
-            AC = SoulKnife ? 18 : 17;
-            InitMod = SoulKnife ? 5 : 7;
+            AC = 18;
+            InitMod = 7;
             Health = 83;
             MaxHealth = 83;
             HealingThreshold = 18;
@@ -109,25 +145,14 @@ namespace RegressionTest
             Healer = false;
             Priority = HealPriority.Medium;
             DidSneakAttack = false;
+            MyType = CreatureType.PC;
 
-            if (SoulKnife)
-            {
-                Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 0 });
-                Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 20, Mod = 5, Save = 9 });
-                Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 3 });
-                Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 9, Mod = -1, Save = 3 });
-                Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 12, Mod = 1, Save = 1 });
-                Abilities.Add(AbilityScore.Charisma, new Stat { Score = 12, Mod = 1, Save = 1 });
-            }
-            else
-            {
-                Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 0 });
-                Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 20, Mod = 5, Save = 9 });
-                Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 3 });
-                Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 8, Mod = -1, Save = 3 });
-                Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 10, Mod = 0, Save = 0 });
-                Abilities.Add(AbilityScore.Charisma, new Stat { Score = 14, Mod = 2, Save = 2 });
-            }
+            Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 0 });
+            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 20, Mod = 5, Save = 9 });
+            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 3 });
+            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 8, Mod = -1, Save = 3 });
+            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 10, Mod = 0, Save = 0 });
+            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 14, Mod = 2, Save = 2 });
         }
 
         public override void Init()
@@ -161,25 +186,20 @@ namespace RegressionTest
 
         public override BaseAction PickAction()
         {
-            if (SoulKnife)
-                return new SoulDagger { Time = BaseAction.ActionTime.Action, parent = this };
-
-            return new Shortsword { Time = BaseAction.ActionTime.Action, parent = this };
+            return new Soulblades { Time = BaseAction.ActionTime.Action, parent = this };
         }
 
         public override BaseAction PickBonusAction()
         {
-            if (SoulKnife)
-                return new SoulDagger { Time = BaseAction.ActionTime.BonusAction, parent = this };
-            else if (CanHuntersMark && !HuntersMarkRunning)
+            if (CanHuntersMark && !HuntersMarkRunning)
             {
                 CanHuntersMark = false;
-                HuntersMarkRunning = false;
+                HuntersMarkRunning = true;
                 Concentrating = true;
                 return new HuntersMarkActivate();
             }
 
-            return new Shortsword { Time = BaseAction.ActionTime.BonusAction, parent = this };
+            return new Soulblades { Time = BaseAction.ActionTime.BonusAction, parent = this };
         }
     }
 }

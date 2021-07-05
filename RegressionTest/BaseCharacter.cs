@@ -33,6 +33,13 @@ namespace RegressionTest
         public int Save { get; set; } = 0;
     }
 
+    public enum CreatureType
+    {
+        PC,
+        NPC,
+        Summon
+    }
+
     public abstract class BaseCharacter
     {
         public int ID { get; set; } = 0;
@@ -50,7 +57,8 @@ namespace RegressionTest
         public Team Group { get; set; }
         public HealPriority Priority { get; set; } = HealPriority.Dont;
         public bool Concentrating { get; set; } = false;
-        
+        public int Proficiency { get; set; } = 4;
+
         public Saves Scores { get; set; } = new Saves();
 
         public DiceRoller Dice { get; set; } = new DiceRoller();
@@ -66,8 +74,16 @@ namespace RegressionTest
         public bool BonusActionFirst { get; set; } = false;
 
         public bool HasBless { get; set; } = false;
+        public bool HighValueTarget { get; set; } = false;
+        public bool IsDodging { get; set; } = false;
+
+        public bool Sharpshooter { get; set; } = false;
+        public bool GreatWeaponMaster { get; set; } = false;
 
         public Encounter Context { get; set; } = null;
+
+        public CreatureType MyType { get; set; } = CreatureType.NPC;
+        public bool BeenSummoned { get; set; } = false;
 
         public virtual BaseAttack PickAttack()
         {
@@ -82,6 +98,8 @@ namespace RegressionTest
             TempHitPoints = 0;
             HealTarget = null;
             HasAdvantageOnInitiative = false;
+            Concentrating = false;
+            IsDodging = false;
         }
 
         public void RollInitiative()
@@ -95,6 +113,9 @@ namespace RegressionTest
         {
             get
             {
+                if (MyType == CreatureType.Summon)
+                    return false;
+
                 if (Priority == HealPriority.Dont)
                     return false;
 
@@ -158,6 +179,12 @@ namespace RegressionTest
                 Health = 0;
                 Alive = false;
                 OnDeath();
+
+                if (MyType == CreatureType.Summon)
+                {
+                    BeenSummoned = false;
+                }
+
                 return false;
             }
 
@@ -198,6 +225,7 @@ namespace RegressionTest
 
         public virtual void OnNewRound()
         {
+            IsDodging = false;
         }
 
         public virtual void OnNewTurn()
@@ -237,12 +265,12 @@ namespace RegressionTest
             return new NoAction { Time = BaseAction.ActionTime.Reaction };
         }
 
-        public virtual BaseAction PickPreTurn()
+        public virtual BaseAction PickPreTurn(BaseCharacter target)
         {
             return new NoAction { Time = BaseAction.ActionTime.PreTurn };
         }
 
-        public virtual BaseAction PickPostTurn()
+        public virtual BaseAction PickPostTurn(BaseCharacter target)
         {
             return new NoAction { Time = BaseAction.ActionTime.PostTurn };
         }
