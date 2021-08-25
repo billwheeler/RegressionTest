@@ -8,11 +8,50 @@ namespace RegressionTest
 {
     public class Paladin : BaseCharacter
     {
-        public class GlaivePM : BaseAction
+        public class BattleAxe : BaseAction
         {
             public Paladin parent { get; set; }
 
-            public GlaivePM()
+            public BattleAxe()
+            {
+                Desc = "Battle Axe";
+                Type = ActionType.MeleeAttack;
+                Modifier = 7;
+            }
+
+            public override int Amount()
+            {
+                int damage = Dice.D8(CriticalHit ? 2 : 1);
+
+                if (parent.SpiritShroudRunning)
+                {
+                    damage += Dice.D8(CriticalHit ? 2 : 1);
+                }
+
+                // divine smite
+                if (Dice.D100() <= (CriticalHit ? 50 : 10))
+                {
+                    int number = Dice.D4();
+                    if (number == 1)
+                        number = 2;
+                    else if (number > 6)
+                        number = 6;
+
+                    damage += Dice.D8(number);
+                }
+
+                // divine strike comes online at level 11
+                //damage += Dice.D8(CriticalHit ? 2 : 1);
+
+                return damage + Modifier;
+            }
+        }
+
+        public class SpearPolearmMaster : BaseAction
+        {
+            public Paladin parent { get; set; }
+
+            public SpearPolearmMaster()
             {
                 Desc = "Spear";
                 Type = ActionType.MeleeAttack;
@@ -35,7 +74,7 @@ namespace RegressionTest
                 //Console.WriteLine($"Sacred Weapon: {parent.SacredBladeRunning}, Attack: {AttackModifier}");
 
                 // divine smite
-                if (Dice.D100() <= (CriticalHit ? 50 : 15))
+                if (Dice.D100() <= (CriticalHit ? 50 : 10))
                 {
                     int number = Dice.D4();
                     if (number == 1)
@@ -103,8 +142,10 @@ namespace RegressionTest
             }
         }
 
+        public bool UsePolearmSpear { get; set; } = true;
         public bool CanBonusActionAttack { get; set; } = false;
-        public bool SacredBladeRunning { get; set; } = false;
+        public bool CanSacredWeapon { get; set; } = true;
+        public bool SacredWeaponRunning { get; set; } = false;
         public bool SpiritShroudRunning { get; set; } = false;
         public int LayOnHandsPool { get; set; } = 50;
 
@@ -133,7 +174,7 @@ namespace RegressionTest
         public override void Init()
         {
             base.Init();
-            SacredBladeRunning = false;
+            SacredWeaponRunning = false;
             SpiritShroudRunning = false;
             LayOnHandsPool = 50;
             CanBonusActionAttack = false;
@@ -141,9 +182,9 @@ namespace RegressionTest
 
         public override BaseAction PickAction()
         {
-            if (!SacredBladeRunning)
+            if (CanSacredWeapon && !SacredWeaponRunning)
             {
-                SacredBladeRunning = true;
+                SacredWeaponRunning = true;
                 return new SacredBladeActivate();
             }
 
@@ -152,8 +193,15 @@ namespace RegressionTest
                 return new LayOnHands { parent = this };
             }
 
-            CanBonusActionAttack = true;
-            return new GlaivePM { Time = BaseAction.ActionTime.Action, TotalToRun = 2, parent = this, AttackModifier = SacredBladeRunning ? 12 : 9 };
+            if (UsePolearmSpear)
+            {
+                CanBonusActionAttack = true;
+                return new SpearPolearmMaster { Time = BaseAction.ActionTime.Action, TotalToRun = 2, parent = this, AttackModifier = SacredWeaponRunning ? 12 : 9 };
+            }
+            else
+            {
+                return new BattleAxe { Time = BaseAction.ActionTime.Action, TotalToRun = 2, parent = this, AttackModifier = SacredWeaponRunning ? 12 : 9 };
+            }
         }
 
         public override BaseAction PickBonusAction()
@@ -165,8 +213,8 @@ namespace RegressionTest
                 return new SpiritShroudActivate();
             }
 
-            if (CanBonusActionAttack)
-                return new GlaivePM { Time = BaseAction.ActionTime.BonusAction, TotalToRun = 1, parent = this, AttackModifier = SacredBladeRunning ? 12 : 9 };
+            if (UsePolearmSpear && CanBonusActionAttack)
+                return new SpearPolearmMaster { Time = BaseAction.ActionTime.BonusAction, TotalToRun = 1, parent = this, AttackModifier = SacredWeaponRunning ? 12 : 9 };
 
             return new NoAction { Time = BaseAction.ActionTime.BonusAction };
         }
@@ -179,7 +227,7 @@ namespace RegressionTest
 
         public override void OnNewTurn()
         {
-            if (!SacredBladeRunning)
+            if (CanSacredWeapon && !SacredWeaponRunning)
             {
                 BonusActionFirst = false;
             }
@@ -204,7 +252,7 @@ namespace RegressionTest
         {
             base.OnDeath();
 
-            SacredBladeRunning = false;
+            SacredWeaponRunning = false;
             SpiritShroudRunning = false;
         }
     }

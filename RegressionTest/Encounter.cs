@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Weighted_Randomizer;
 
 namespace RegressionTest
 {
@@ -138,12 +139,26 @@ namespace RegressionTest
             }
         }
 
-        public void GiveTempHP(Team group, int amount = 0)
+        public void GiveTempHP(Team group, BaseCharacter giver, int amount = 0)
         {
             for (int i = 0; i < Characters.Count; i++)
             {
                 if (Characters[i].Group == group && Characters[i].Alive && Characters[i].MyType != CreatureType.Summon)
+                {
+                    if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}] grants {2} temp hp to {3}.",
+                        giver.Name,
+                        giver.GetHealthDesc(),
+                        amount,
+                        Characters[i].Name
+                    ));
+
+                    if (giver.Group == Team.TeamOne)
+                        Players.TotalTempHP += amount;
+                    else if (giver.Group == Team.TeamTwo)
+                        Baddies.TotalTempHP += amount;
+
                     Characters[i].SetTempHitPoints(amount);
+                }
             }
         }
 
@@ -165,38 +180,65 @@ namespace RegressionTest
             }
         }
 
-        public int PickEnemy(Team group)
+        private int ClampMax(int max)
         {
-            List<BaseCharacter> enemies = CurrentEnemies(group);
-            if (enemies.Count > 0)
+            IWeightedRandomizer<int> randomizer = new DynamicWeightedRandomizer<int>();
+            for (int i = 0; i < max; i++)
             {
-                for (int i = 0; i < Characters.Count; i++)
-                {
-                    if (Characters[i].Group != group && Characters[i].HighValueTarget && Characters[i].Alive && Dice.D100() >= 80)
-                        return i;
-                }
+                randomizer.Add(i + 1, max - i);
+            }
 
-                int id = enemies[new Random().Next(enemies.Count)].ID;
-                for (int i = 0; i < Characters.Count; i++)
+            return randomizer.NextWithRemoval();
+        }
+
+        public List<int> PickEnemies(Team group, int max = 1)
+        {
+            IWeightedRandomizer<int> randomizer = new DynamicWeightedRandomizer<int>();
+
+            for (int i = 0; i < Characters.Count; i++)
+            {
+                if (Characters[i].Group != group && Characters[i].Alive)
                 {
-                    if (Characters[i].ID == id)
-                        return i;
+                    randomizer.Add(i, Characters[i].HighValueTarget ? 8 : 1);
                 }
             }
 
-            return -1;
+            List<int> result = new List<int>();
+
+            int total = randomizer.Count;
+
+            if (total > 0)
+            {
+                if (max > total) max = total;
+                if (max > 1) max = ClampMax(max);
+
+                for (int j = 0; j < max; j++)
+                {
+                    result.Add(randomizer.NextWithRemoval());
+                }
+            }
+
+            return result;
         }
 
         public int PickHealTarget(Team group)
         {
-            BaseCharacter target = Characters.Where(c => c.Group == group && c.NeedsHealing).OrderByDescending(c => c.Priority).FirstOrDefault();
-            if (target != null)
+            IWeightedRandomizer<int> randomizer = new DynamicWeightedRandomizer<int>();
+
+            for (int i = 0; i < Characters.Count; i++)
             {
-                for (int i = 0; i < Characters.Count; i++)
+                if (Characters[i].Group == group && Characters[i].Alive && Characters[i].Priority != HealPriority.Dont)
                 {
-                    if (Characters[i].ID == target.ID)
-                        return i;
+                    if (Characters[i].Health <= Characters[i].HealingThreshold)
+                    {
+                        randomizer.Add(i, (int)Characters[i].Priority);
+                    }
                 }
+            }
+
+            if (randomizer.Count > 0)
+            {
+                return randomizer.NextWithRemoval();
             }
 
             return -1;
@@ -241,30 +283,26 @@ namespace RegressionTest
             }
             else if (action.Type == BaseAction.ActionType.GrantTempHp)
             {
-                if (target > -1)
+                if (target > -1 && Characters[me].Group == Characters[target].Group)
                 {
-                    // don't give temp hit points to enemies
-                    if (Characters[me].Group == Characters[target].Group)
+                    int amount = action.Amount();
+
+                    // only grant temp hp if it's most than we have
+                    if (Characters[target].TempHitPoints < amount)
                     {
-                        int amount = action.Amount();
+                        Characters[target].SetTempHitPoints(amount);
 
-                        // only grant temp hp if it's most than we have
-                        if (Characters[target].TempHitPoints < amount)
-                        {
-                            Characters[target].SetTempHitPoints(amount);
+                        if (Characters[me].Group == Team.TeamOne)
+                            Players.TotalTempHP += amount;
+                        else if (Characters[me].Group == Team.TeamTwo)
+                            Baddies.TotalTempHP += amount;
 
-                            if (Characters[me].Group == Team.TeamOne)
-                                Players.TotalTempHP += amount;
-                            else if (Characters[me].Group == Team.TeamTwo)
-                                Baddies.TotalTempHP += amount;
-
-                            if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}] grants {2} temp hp to {3}.",
-                                Characters[me].Name,
-                                Characters[me].GetHealthDesc(),
-                                amount,
-                                Characters[target].Name
-                            ));
-                        }
+                        if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}] grants {2} temp hp to {3}.",
+                            Characters[me].Name,
+                            Characters[me].GetHealthDesc(),
+                            amount,
+                            Characters[target].Name
+                        ));
                     }
                 }
             }
@@ -278,85 +316,95 @@ namespace RegressionTest
             }
             else if (action.Type == BaseAction.ActionType.SpellSave)
             {
+                List<int> targets;
                 if (target > -1)
                 {
-                    // don't attact teammates
-                    if (Characters[me].Group == Characters[target].Group)
+                    // don't attack allies!
+                    if (Characters[target].Group == Characters[me].Group)
                         return true;
-                }
 
-                int enemy = target > -1 ? target : PickEnemy(Characters[me].Group);
-                if (enemy == -1)
+                    targets = new List<int>();
+                    targets.Add(target);
+                }
+                else
                 {
-                    return false;
+                    targets = PickEnemies(Characters[me].Group, action.MaxTargets);
+                    if (targets.Count == 0)
+                        return false;
                 }
 
-                bool hits = action.Hits(Characters[me], Characters[enemy]);
                 int damage = 0;
-                bool survives = true;
-                string description = "no damage";
-                string concentration = ".";
-
-                if (hits)
+                foreach (int enemy in targets)
                 {
-                    damage = action.Amount();
-                    Characters[me].Stats.DamageGiven += damage;
-                    Characters[enemy].Stats.DamageTaken += damage;
-                    survives = Characters[enemy].TakeDamage(damage);
+                    action.PreHit(Characters[me], Characters[enemy]);
+                    bool hits = action.Hits(Characters[me], Characters[enemy]);
+                    bool survives = true;
+                    string description = "no damage";
+                    string concentration = ".";
 
-                    Characters[me].Stats.Attacks++;
-                    if (action.Result == BaseAction.DamageAmount.Full)
-                        Characters[me].Stats.Hits++;
-
-                    if (Characters[enemy].Concentrating)
+                    if (hits)
                     {
-                        concentration = Characters[enemy].ConcentrationCheck(damage) ?
-                            ", maintains concentration." :
-                            ", loses concentration.";
+                        if (damage == 0)
+                            damage = action.Amount();
+                        Characters[me].Stats.DamageGiven += damage;
+                        Characters[enemy].Stats.DamageTaken += damage;
+                        survives = Characters[enemy].TakeDamage(damage, action.Type);
+
+                        Characters[me].Stats.Attacks++;
+                        if (action.Result == BaseAction.DamageAmount.Full)
+                            Characters[me].Stats.Hits++;
+
+                        if (Characters[enemy].Concentrating)
+                        {
+                            concentration = Characters[enemy].ConcentrationCheck(damage) ?
+                                ", maintains concentration." :
+                                ", loses concentration.";
+                        }
+
+                        description = survives ?
+                            string.Format("{0}hp damage", damage) :
+                            string.Format("{0}hp damage, and dies", damage);
                     }
 
-                    description = survives ?
-                        string.Format("{0}hp damage", damage) :
-                        string.Format("{0}hp damage, and dies", damage);
-                }
+                    if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}] - {2}, {3}. {4} takes {5}{6}",
+                            Characters[me].Name,
+                            Characters[me].GetHealthDesc(),
+                            action.Desc,
+                            action.HitDesc(),
+                            Characters[enemy].Name,
+                            description,
+                            concentration
+                    ));
 
-                if (OutputAttacks) Console.WriteLine(string.Format("{0} [{1}] - {2}, {3}. {4} takes {5}{6}",
-                        Characters[me].Name,
-                        Characters[me].GetHealthDesc(),
-                        action.Desc,
-                        action.HitDesc(),
-                        Characters[enemy].Name,
-                        description,
-                        concentration
-                ));
-
-                if (!survives)
-                {
-                    Characters[enemy].Stats.Deaths++;
-                    enemy = PickEnemy(Characters[me].Group);
-                    if (enemy == -1)
+                    if (!survives)
                     {
-                        return false;
+                        Characters[enemy].Stats.Deaths++;
                     }
                 }
             }
             else if (action.Type != BaseAction.ActionType.None)
             {
+                int enemy;
                 if (target > -1)
                 {
-                    // don't attact teammates
-                    if (Characters[me].Group == Characters[target].Group)
+                    // don't attack allies!
+                    if (Characters[target].Group == Characters[me].Group)
                         return true;
-                }
 
-                int enemy = target > -1 ? target : PickEnemy(Characters[me].Group);
-                if (enemy == -1)
+                    enemy = target;
+                }
+                else
                 {
-                    return false;
+                    List<int> targets = PickEnemies(Characters[me].Group, action.MaxTargets);
+                    if (targets.Count == 0)
+                        return false;
+                    enemy = targets.First();
                 }
 
                 for (int i = 0; i < action.TotalToRun; i++)
                 {
+                    action.CurrentRunning++;
+                    action.PreHit(Characters[me], Characters[enemy]);
                     bool hits = action.Hits(Characters[me], Characters[enemy]);
                     Characters[me].Stats.Attacks++;
                     int damage = 0;
@@ -368,14 +416,9 @@ namespace RegressionTest
                     {
                         Characters[me].Stats.Hits++;
                         damage = action.Amount();
-                        if (action.DidSpecial)
-                        {
-                            damage += 10;
-                        }
-
                         Characters[me].Stats.DamageGiven += damage;
                         Characters[enemy].Stats.DamageTaken += damage;
-                        survives = Characters[enemy].TakeDamage(damage);
+                        survives = Characters[enemy].TakeDamage(damage, action.Type);
 
                         if (Characters[enemy].Concentrating)
                         {
@@ -399,16 +442,13 @@ namespace RegressionTest
                          concentration
                     ));
 
-                    action.PostAttack();
-
                     if (!survives)
                     {
                         Characters[enemy].Stats.Deaths++;
-                        enemy = PickEnemy(Characters[me].Group);
-                        if (enemy == -1)
-                        {
+                        List<int> targets = PickEnemies(Characters[me].Group, action.MaxTargets);
+                        if (targets.Count == 0)
                             return false;
-                        }
+                        enemy = targets.First();
                     }
                 }
             }
@@ -519,7 +559,12 @@ namespace RegressionTest
                     }
                 }
 
-                Characters[me].OnEndTurn();
+                string endTurn = Characters[me].OnEndTurn();
+                if (OutputAttacks)
+                {
+                    if (!string.IsNullOrEmpty(endTurn))
+                        Console.WriteLine(endTurn);
+                }
 
                 // post turn reactions
                 if (result)

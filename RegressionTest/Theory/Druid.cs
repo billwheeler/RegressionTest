@@ -14,6 +14,23 @@ namespace RegressionTest
         public bool BearTotemUsed { get; set; } = false;
         public bool ConjureUsed { get; set; } = false;
 
+        public class TollOfTheDead : BaseAction
+        {
+            public TollOfTheDead()
+            {
+                Desc = "Toll of the Dead";
+                Type = ActionType.SpellSave;
+                Time = ActionTime.Action;
+                Ability = AbilityScore.Wisdom;
+                DC = 17;
+            }
+
+            public override int Amount()
+            {
+                return Dice.D12(2);
+            }
+        }
+
         public class Scimitar : BaseAction
         {
             public Scimitar()
@@ -77,7 +94,7 @@ namespace RegressionTest
 
         public Druid()
         {
-            Name = "Erven";
+            Name = "Cralamir";
             AC = 17;
             Health = 83;
             MaxHealth = 83;
@@ -123,14 +140,14 @@ namespace RegressionTest
                 return new ConjureWoodlandBeingsActivate();
             }
 
-            return new Scimitar { Time = BaseAction.ActionTime.Action };
+            return new TollOfTheDead { Time = BaseAction.ActionTime.Action };
         }
 
         public override BaseAction PickBonusAction()
         {
             if (!BearTotemUsed && !BearTotemRunning)
             {
-                Context.GiveTempHP(Group, 15);
+                Context.GiveTempHP(Group, this, 15);
                 BearTotemRunning = true;
                 BearTotemUsed = true;
                 return new BearTotemActivate();

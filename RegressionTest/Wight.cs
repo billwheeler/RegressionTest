@@ -16,13 +16,13 @@ namespace RegressionTest
                 Type = ActionType.MeleeAttack;
                 Time = ActionTime.Action;
                 AttackModifier = 9;
-                Modifier = 4;
+                Modifier = 5;
                 TotalToRun = 2;
             }
 
             public override int Amount()
             {
-                return Dice.D8(CriticalHit ? 2 : 1) + Modifier;
+                return Dice.D8(CriticalHit ? 4 : 2) + Modifier;
 
             }
         }
@@ -49,8 +49,8 @@ namespace RegressionTest
             Name = "Wight";
             AC = 14;
             InitMod = 4;
-            Health = 54;
-            MaxHealth = 54;
+            Health = 85;
+            MaxHealth = 85;
             Group = Team.TeamTwo;
             Priority = HealPriority.Medium;
         }

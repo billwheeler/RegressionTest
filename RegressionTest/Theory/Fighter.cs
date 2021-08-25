@@ -15,13 +15,53 @@ namespace RegressionTest
         {
             public Fighter parent { get; set; }
 
+            private string _desc = "Glaive";
+            private bool _gwnThisTurn = false;
+            private bool _sdThisTurn = false;
+
+            public override void PreHit(BaseCharacter attacker, BaseCharacter target)
+            {
+                base.PreHit(attacker, target);
+                double percentage = Util.Remap(target.AC, 12, 17, 100, 0);
+
+                if (Dice.D100() < percentage)
+                {
+                    _gwnThisTurn = true;
+                    AttackModifier = 4;
+                }
+                else
+                {
+                    _gwnThisTurn = false;
+                    AttackModifier = 9;
+                }
+            }
+
+            public override string Desc
+            {
+                get
+                {
+                    string output = _desc;
+
+                    if (_gwnThisTurn)
+                        output += " (GWN)";
+
+                    if (_sdThisTurn)
+                    {
+                        output += " (SD)";
+                        _sdThisTurn = false;
+                    }
+
+                    return output;
+                }
+                set { _desc = value; }
+            }
+
             public GlaivePM()
             {
                 Desc = "Glaive";
                 Type = ActionType.MeleeAttack;
                 AttackModifier = 9;
                 Modifier = 5;
-                CanGreatWeaponMaster = true;
             }
 
             public override int Amount()
@@ -36,7 +76,14 @@ namespace RegressionTest
                 {
                     parent.NumSuperiorityDice--;
                     parent.UsedSuperiorityDice = true;
+                    _sdThisTurn = true;
                     damage += Dice.D8(CriticalHit ? 2 : 1);
+                }
+
+                if (_gwnThisTurn)
+                {
+                    damage += 10;
+                    _gwnThisTurn = false;
                 }
 
                 return damage + Modifier;
@@ -47,15 +94,14 @@ namespace RegressionTest
         {
             Name = "Murie";
             AC = 18;
-            Health = 94;
-            MaxHealth = 94;
+            Health = 104;
+            MaxHealth = 104;
             HealingThreshold = 18;
             Group = Team.TeamOne;
             Healer = false;
             Priority = HealPriority.Medium;
             InitMod = 0;
             MyType = CreatureType.PC;
-            GreatWeaponMaster = true;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 20, Mod = 5, Save = 9 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 10, Mod = 0, Save = 0 });

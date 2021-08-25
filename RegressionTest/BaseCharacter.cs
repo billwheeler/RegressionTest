@@ -59,6 +59,8 @@ namespace RegressionTest
         public bool Concentrating { get; set; } = false;
         public int Proficiency { get; set; } = 4;
 
+        public bool UsedReaction { get; set; } = false;
+
         public Saves Scores { get; set; } = new Saves();
 
         public DiceRoller Dice { get; set; } = new DiceRoller();
@@ -77,13 +79,12 @@ namespace RegressionTest
         public bool HighValueTarget { get; set; } = false;
         public bool IsDodging { get; set; } = false;
 
-        public bool Sharpshooter { get; set; } = false;
-        public bool GreatWeaponMaster { get; set; } = false;
-
         public Encounter Context { get; set; } = null;
 
         public CreatureType MyType { get; set; } = CreatureType.NPC;
         public bool BeenSummoned { get; set; } = false;
+
+        public SpellEffect ActiveEffect { get; set; } = null;
 
         public virtual BaseAttack PickAttack()
         {
@@ -131,6 +132,14 @@ namespace RegressionTest
                 if (HasBless)
                     roll += Dice.D4();
 
+                if (ActiveEffect != null)
+                {
+                    if (ActiveEffect.Type == SpellEffectType.SynapticStatic)
+                    {
+                        roll -= Dice.D6();
+                    }
+                }
+
                 return roll >= dc;
             }
 
@@ -157,8 +166,10 @@ namespace RegressionTest
             return result;
         }
 
-        public bool TakeDamage(int amount)
+        public bool TakeDamage(int amount, BaseAction.ActionType actionType)
         {
+            amount = OnTakeDamage(amount, actionType);
+
             if (TempHitPoints > 0)
             {
                 if (amount >= TempHitPoints)
@@ -226,14 +237,31 @@ namespace RegressionTest
         public virtual void OnNewRound()
         {
             IsDodging = false;
+            UsedReaction = false;
         }
 
         public virtual void OnNewTurn()
         {
         }
 
-        public virtual void OnEndTurn()
+        public string OnEndTurn()
         {
+            string output = string.Empty;
+
+            if (ActiveEffect != null)
+            {
+                if (SavingThrow(ActiveEffect.Ability, ActiveEffect.DC))
+                {
+                    output = $"{Name} [{GetHealthDesc()}] made save against {ActiveEffect.Name}, effect ended.";
+                    ActiveEffect = null;
+                }
+                else
+                {
+                    output = $"{Name} [{GetHealthDesc()}] failed save against {ActiveEffect.Name}, effect remains.";
+                }
+            }
+
+            return output;
         }
 
         public virtual void OnFailConcentration()
@@ -248,6 +276,15 @@ namespace RegressionTest
 
         public virtual void OnBeforeHitCalc(int roll)
         {
+        }
+
+        public virtual void OnAfterHitCalc()
+        {
+        }
+
+        public virtual int OnTakeDamage(int amount, BaseAction.ActionType actionType)
+        {
+            return amount;
         }
 
         public virtual BaseAction PickAction()

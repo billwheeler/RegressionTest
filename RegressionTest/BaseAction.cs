@@ -8,30 +8,26 @@ namespace RegressionTest
 {
     public abstract class BaseAction: IDisposable
     {
-        public string Desc { get; set; }
-        public string BackupDesc { get; set; }
+        public virtual string Desc { get; set; }
  
         public DiceRoller Dice { get; set; } = new DiceRoller();
         
-        public List<BaseCharacter> Targets { get; set; } = new List<BaseCharacter>();
         public int MaxTargets { get; set; } = 1;
         
         public int AttackModifier { get; set; } = 0;
         public int Modifier { get; set; } = 0;
         
         public int TotalToRun { get; set; } = 1;
-        
+        public int CurrentRunning { get; set; } = 0;
+
         public bool CriticalHit { get; set; } = false;
         public int CriticalThreshold { get; set; } = 20;
         public bool HalfDamageOnMiss { get; set; } = false;
 
-        public bool CanSharpshoopter { get; set; } = false;
-        public bool CanGreatWeaponMaster { get; set; } = false;
-
-        public bool DidSpecial { get; set; } = false;
-
         public AbilityScore Ability { get; set; } = AbilityScore.Wisdom;
         public int DC { get; set; } = 10;
+
+        public SpellEffect EffectToApply { get; set; } = null;
 
         public enum ActionType
         {
@@ -67,6 +63,10 @@ namespace RegressionTest
 
         public DamageAmount Result { get; set; } = DamageAmount.None;
 
+        public virtual void PreHit(BaseCharacter attacker, BaseCharacter target)
+        {
+        }
+
         public virtual bool Hits(BaseCharacter attacker, BaseCharacter target)
         {
             CriticalHit = false;
@@ -81,7 +81,12 @@ namespace RegressionTest
                     break;
 
                 case ActionType.SpellSave:
-                    hits = target.SavingThrow(Ability, DC);
+                    hits = !target.SavingThrow(Ability, DC);
+                    if (hits && EffectToApply != null)
+                    {
+                        target.ActiveEffect = EffectToApply;
+                    }
+
                     if (HalfDamageOnMiss)
                     {
                         Result = hits ? DamageAmount.Full : DamageAmount.Half;
@@ -117,31 +122,10 @@ namespace RegressionTest
             CriticalHit = false;
             var abilityRoll = AbilityRoll.Normal;
 
-            BackupDesc = Desc;
-
             if (target.IsDodging)
                 abilityRoll = AbilityRoll.Disadvantage;
 
             int mod = AttackModifier;
-            if (CanSharpshoopter && attacker.Sharpshooter)
-            {
-                if (target.AC > 13 && Dice.D100() <= 50)
-                {
-                    Desc += " (SS)";
-                    mod = attacker.Proficiency;
-                    DidSpecial = true;
-                }
-            }
-            else if (CanGreatWeaponMaster && attacker.GreatWeaponMaster)
-            {
-                if (target.AC > 13 && Dice.D100() <= 50)
-                {
-                    Desc += " (GWN)";
-                    mod = attacker.Proficiency;
-                    DidSpecial = true;
-                }
-            }
-
             int roll = Dice.MakeAbilityRoll(abilityRoll);
 
             if (roll >= CriticalThreshold)
@@ -152,7 +136,11 @@ namespace RegressionTest
 
             target.OnBeforeHitCalc(roll);
 
-            return (roll + mod) >= target.AC ? true : false;
+            var result = (roll + mod) >= target.AC ? true : false;
+
+            target.OnAfterHitCalc();
+
+            return result;
         }
 
         public abstract int Amount();
@@ -161,7 +149,7 @@ namespace RegressionTest
         {
             if (Type == ActionType.SpellSave)
             {
-                return Result == DamageAmount.Full ? "made save" : "failed save";
+                return Result == DamageAmount.Full ? "target failed save" : "target made save";
             }
 
             if (CriticalHit)
@@ -175,12 +163,6 @@ namespace RegressionTest
 
         public void Dispose()
         {
-        }
-
-        public void PostAttack()
-        {
-            DidSpecial = false;
-            Desc = BackupDesc;
         }
     }
 

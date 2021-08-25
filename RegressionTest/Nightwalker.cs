@@ -92,7 +92,7 @@ namespace RegressionTest
         public override BaseAction PickPreTurn(BaseCharacter target)
         {
             // we'll say that only 67% of the time an enemy is in range
-            if (Dice.D100() <= 67)
+            if (Alive && Dice.D100() <= 67)
             {
                 return new AnnihilatingAura();
             }
