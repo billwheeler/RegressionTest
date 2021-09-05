@@ -35,7 +35,7 @@ namespace RegressionTest
                     AttackModifier = 11;
                 }
             }*/
-
+            
             public override string Desc { 
                 get
                 {
@@ -181,6 +181,8 @@ namespace RegressionTest
 
         public override void OnNewTurn()
         {
+            base.OnNewTurn();
+
             if (!HuntersMarkRunning)
             {
                 BonusActionFirst = true;

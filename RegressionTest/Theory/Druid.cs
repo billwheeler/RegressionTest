@@ -124,10 +124,6 @@ namespace RegressionTest
             ConjureUsed = false;
         }
 
-        public override void OnNewTurn()
-        {
-        }
-
         public override BaseAction PickAction()
         {
             if (!ConjureUsed && !ConjureRunning)

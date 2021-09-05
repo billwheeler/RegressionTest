@@ -19,7 +19,7 @@ namespace RegressionTest
             private bool _gwnThisTurn = false;
             private bool _sdThisTurn = false;
 
-            public override void PreHit(BaseCharacter attacker, BaseCharacter target)
+            /*public override void PreHit(BaseCharacter attacker, BaseCharacter target)
             {
                 base.PreHit(attacker, target);
                 double percentage = Util.Remap(target.AC, 12, 17, 100, 0);
@@ -34,7 +34,7 @@ namespace RegressionTest
                     _gwnThisTurn = false;
                     AttackModifier = 9;
                 }
-            }
+            }*/
 
             public override string Desc
             {
@@ -120,6 +120,7 @@ namespace RegressionTest
 
         public override void OnNewTurn()
         {
+            base.OnNewTurn();
             UsedSuperiorityDice = false;
         }
 

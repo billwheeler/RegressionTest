@@ -63,7 +63,7 @@ namespace RegressionTest
                     damage += Modifier;
                 }
 
-                return damage + 2;
+                return damage;
             }
         }
 
@@ -81,7 +81,7 @@ namespace RegressionTest
 
             public override int Amount()
             {
-                int damage = Dice.D4(CriticalHit ? 2 : 1);
+                int damage = Dice.D4(CriticalHit ? 4 : 2);
 
                 if (!parent.DidSneakAttack)
                 {
@@ -130,6 +130,7 @@ namespace RegressionTest
 
         public override void OnNewTurn()
         {
+            base.OnNewTurn();
             DidSneakAttack = false;
         }
 

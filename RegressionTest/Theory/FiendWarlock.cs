@@ -146,6 +146,8 @@ namespace RegressionTest
 
         public override void OnNewTurn()
         {
+            base.OnNewTurn();
+
             if (CanSynapticStatic)
             {
                 BonusActionFirst = false;

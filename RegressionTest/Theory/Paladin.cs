@@ -227,6 +227,8 @@ namespace RegressionTest
 
         public override void OnNewTurn()
         {
+            base.OnNewTurn();
+
             if (CanSacredWeapon && !SacredWeaponRunning)
             {
                 BonusActionFirst = false;

@@ -68,6 +68,7 @@ namespace RegressionTest
 
         public override void OnNewTurn()
         {
+            base.OnNewTurn();
             DidSneakAttack = false;
         }
 

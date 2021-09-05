@@ -449,6 +449,8 @@ namespace RegressionTest
                         if (targets.Count == 0)
                             return false;
                         enemy = targets.First();
+
+                        Characters[me].OnEnemyKilled();
                     }
                 }
             }
@@ -522,6 +524,11 @@ namespace RegressionTest
                 {
                     // pick bonus action
                     BaseAction bonusAction = Characters[me].PickBonusAction();
+                    if (bonusAction.Type != BaseAction.ActionType.None)
+                    {
+                        Characters[me].UsedBonusAction = true;
+                    }
+
                     if (!ProcessAction(bonusAction, me))
                     {
                         if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
@@ -531,6 +538,12 @@ namespace RegressionTest
 
                     // pick action
                     BaseAction mainAction = Characters[me].PickAction();
+                    if (mainAction.Type != BaseAction.ActionType.None)
+                    {
+                        Characters[me].UsedBonusAction = true;
+                    }
+
+
                     if (!ProcessAction(mainAction, me))
                     {
                         if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
@@ -542,6 +555,11 @@ namespace RegressionTest
                 {
                     // pick action
                     BaseAction mainAction = Characters[me].PickAction();
+                    if (mainAction.Type != BaseAction.ActionType.None)
+                    {
+                        Characters[me].UsedBonusAction = true;
+                    }
+
                     if (!ProcessAction(mainAction, me))
                     {
                         if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
@@ -551,6 +569,11 @@ namespace RegressionTest
 
                     // pick bonus action
                     BaseAction bonusAction = Characters[me].PickBonusAction();
+                    if (bonusAction.Type != BaseAction.ActionType.None)
+                    {
+                        Characters[me].UsedBonusAction = true;
+                    }
+
                     if (!ProcessAction(bonusAction, me))
                     {
                         if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");

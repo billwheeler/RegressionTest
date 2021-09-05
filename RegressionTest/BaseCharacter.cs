@@ -60,6 +60,10 @@ namespace RegressionTest
         public int Proficiency { get; set; } = 4;
 
         public bool UsedReaction { get; set; } = false;
+        public bool UsedAction { get; set; } = false;
+        public bool UsedBonusAction { get; set; } = false;
+
+        public bool NewEnemy { get; set; } = false;
 
         public Saves Scores { get; set; } = new Saves();
 
@@ -237,7 +241,10 @@ namespace RegressionTest
         public virtual void OnNewRound()
         {
             IsDodging = false;
+            UsedAction = false;
+            UsedBonusAction = false;
             UsedReaction = false;
+            NewEnemy = false;
         }
 
         public virtual void OnNewTurn()
@@ -285,6 +292,11 @@ namespace RegressionTest
         public virtual int OnTakeDamage(int amount, BaseAction.ActionType actionType)
         {
             return amount;
+        }
+
+        public virtual void OnEnemyKilled()
+        {
+            NewEnemy = true;
         }
 
         public virtual BaseAction PickAction()
