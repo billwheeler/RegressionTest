@@ -8,25 +8,21 @@ namespace RegressionTest
 {
     public class Liriam : BaseCharacter
     {
-        public class Hooves : BaseAttack
+        public class Hooves : BaseAction
         {
             public Hooves()
             {
                 Desc = "Hooves";
-                Number = 1;
                 Modifier = 6;
             }
 
-            public override int Damage()
+            public override int Amount()
             {
-                int dmg = 0;
-                dmg += (Dice.D8() + Dice.D8()) + 4;
-                if (CriticalHit) dmg += (Dice.D8() + Dice.D8());
-                return dmg;
+                return Dice.D8(CriticalHit ? 4 : 2) + 4;
             }
         }
 
-        public override BaseAttack PickAttack()
+        public override BaseAction PickAction()
         {
             return new Hooves();
         }
@@ -46,115 +42,177 @@ namespace RegressionTest
 
     public class Tenraja : BaseCharacter
     {
-        public class GorningHorns : BaseAttack
+        public class HalberdPolearmMaster : BaseAction
         {
-            public GorningHorns()
-            {
-                Desc = "Goring Horns";
-                Modifier = 9;
-            }
+            public Tenraja parent { get; set; }
 
-            public override int Damage()
-            {
-                if (CriticalHit)
-                    return Dice.D6() + Dice.D6() + 4;
-                return Dice.D6() + 4;
-            }
-        }
-
-        public class GlaiveAttack : BaseAttack
-        {
-            public bool HuntersMark { get; set; }
-            public bool DivineSmite { get; set; }
-
-            public GlaiveAttack()
+            public HalberdPolearmMaster()
             {
                 Desc = "Halberd";
-                Number = 3;
-                Modifier = 10;
-                DivineSmite = false;
+                Type = ActionType.MeleeAttack;
+                AttackModifier = 10;
+                Modifier = 6;
             }
 
-            public override bool Hits(BaseCharacter target)
+            public override int Amount()
             {
-                bool hits = base.Hits(target);
-                if (CurrentAttack > 2)
-                    Desc = "Halberd Alt";
+                int damage = 0;
 
-                return hits;
-            }
+                damage += (Time == ActionTime.Action) ?
+                    Dice.D10(CriticalHit ? 2 : 1) :
+                    Dice.D4(CriticalHit ? 2 : 1);
 
-            public override int Damage()
-            {
-                int baseDamage = CurrentAttack > 2 ? Dice.D4() : Dice.D10();
-                if (CriticalHit) baseDamage += CurrentAttack > 2 ? Dice.D4() : Dice.D10();
-
-                if (HuntersMark)
+                if (parent.DivineFavorRunning)
                 {
-                    baseDamage += Dice.D6();
-                    if (CriticalHit) baseDamage += Dice.D6();
+                    damage += Dice.D4(CriticalHit ? 2 : 1);
                 }
 
-                if (!DivineSmite && Dice.D20() == 20)
+                // divine smite
+                if (Dice.D100() <= (CriticalHit ? 50 : 10))
                 {
-                    DivineSmite = true;
-                    baseDamage += (Dice.D8() + Dice.D8());
-                    if (CriticalHit) baseDamage += (Dice.D8() + Dice.D8());
-                    if (Dice.D20() == 20)
-                    {
-                        baseDamage += Dice.D8();
-                        if (CriticalHit) baseDamage += Dice.D8();
-                    }
+                    int number = Dice.D4();
+                    if (number == 1)
+                        number = 2;
+                    else if (number > 6)
+                        number = 6;
+
+                    damage += Dice.D8(number);
                 }
 
-                if (CriticalHit) baseDamage += 7;
+                // divine strike comes online at level 11
+                damage += Dice.D8(CriticalHit ? 2 : 1);
 
-                return baseDamage + 4;
+                return damage + Modifier;
             }
         }
+
+        public class LayOnHands : SpellAction
+        {
+            public Tenraja parent { get; set; }
+
+            public LayOnHands()
+            {
+                Desc = "Lay On Hands";
+                Type = ActionType.Heal;
+                Time = ActionTime.Action;
+            }
+
+            public override int Amount()
+            {
+                int amount = 15;
+                if (parent.LayOnHandsPool < 15)
+                    amount = parent.LayOnHandsPool;
+                return amount;
+            }
+        }
+
+        public class DivineFavorActivate : BaseAction
+        {
+            public DivineFavorActivate()
+            {
+                Desc = "Divine Favor";
+                Type = ActionType.Activate;
+                Time = ActionTime.BonusAction;
+            }
+
+            public override int Amount()
+            {
+                return 0;
+            }
+        }
+
+        public bool CanBonusActionAttack { get; set; } = false;
+        public bool DivineFavorRunning { get; set; } = false;
+        public int LayOnHandsPool { get; set; } = 50;
 
         public Tenraja()
         {
             Name = "Tenraja";
             AC = 18;
-            Health = 76;
-            MaxHealth = 76;
-            HealingThreshold = 33;
+            Health = 92;
+            MaxHealth = 92;
+            HealingThreshold = 18;
             Group = Team.TeamOne;
-            Healer = true;
+            Healer = false;
             Priority = HealPriority.Medium;
+            InitMod = 0;
+            WarCaster = false;
+            MyType = CreatureType.PC;
+
+            Abilities.Add(AbilityScore.Strength, new Stat { Score = 18, Mod = 4, Save = 7 });
+            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 11, Mod = 0, Save = 3 });
+            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 13, Mod = 2, Save = 4 });
+            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 9, Mod = -1, Save = 2 });
+            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 10, Mod = 0, Save = 7 });
+            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 16, Mod = 3, Save = 10 });
         }
 
-        public override BaseAttack PickAttack()
+        public override void Init()
         {
-            int rando = Dice.D10();
-            if (rando == 10)
-            {
-                return new GorningHorns() { Dice = Dice };
-            }
-            else if (rando > 3 && rando < 10)
-            {
-                return new GlaiveAttack { Dice = Dice, HuntersMark = true };
-            }
-
-            return new GlaiveAttack { Dice = Dice, HuntersMark = false };
+            base.Init();
+            DivineFavorRunning = false;
+            LayOnHandsPool = 55;
+            CanBonusActionAttack = false;
         }
 
-        public override int HealAmount(HealPriority priority)
+        public override BaseAction PickAction()
         {
-            Random rnd = new Random();
-
-            switch (priority)
+            if (HealTarget != null && LayOnHandsPool > 0 && Dice.D100() <= 33)
             {
-                case HealPriority.High:
-                    return rnd.Next(8, 12);
-                case HealPriority.Medium:
-                    return rnd.Next(5, 10);
-                case HealPriority.Low:
-                    return rnd.Next(2, 5);
+                return new LayOnHands { parent = this };
             }
 
-            return base.HealAmount(priority);
+            CanBonusActionAttack = true;
+            return new HalberdPolearmMaster { Time = BaseAction.ActionTime.Action, TotalToRun = 2, parent = this };
+        }
+
+        public override BaseAction PickBonusAction()
+        {
+            if (!Concentrating && !DivineFavorRunning)
+            {
+                DivineFavorRunning = true;
+                Concentrating = true;
+                return new DivineFavorActivate();
+            }
+
+            if (CanBonusActionAttack)
+                return new HalberdPolearmMaster { Time = BaseAction.ActionTime.BonusAction, TotalToRun = 1, parent = this };
+
+            return new NoAction { Time = BaseAction.ActionTime.BonusAction };
+        }
+
+        public override void OnNewRound()
+        {
+            base.OnNewRound();
+            CanBonusActionAttack = false;
+        }
+
+        public override void OnNewTurn()
+        {
+            base.OnNewTurn();
+
+            if (!Concentrating && !DivineFavorRunning)
+            {
+                BonusActionFirst = Healer && HealTarget != null ? false : true;
+            }
+            else
+            {
+                BonusActionFirst = false;
+            }
+        }
+
+        public override void OnFailConcentration()
+        {
+            base.OnFailConcentration();
+
+            if (DivineFavorRunning) DivineFavorRunning = false;
+        }
+
+        public override void OnDeath()
+        {
+            base.OnDeath();
+
+            DivineFavorRunning = false;
         }
     }
 }

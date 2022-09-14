@@ -8,21 +8,7 @@ namespace RegressionTest
 {
     public class Satyr : BaseCharacter
     {
-        public class Ram : BaseAction
-        {
-            public Ram()
-            {
-                Desc = "Ram";
-                Type = ActionType.MeleeAttack;
-                AttackModifier = 3;
-                Modifier = 1;
-            }
-
-            public override int Amount()
-            {
-                return Dice.D4(CriticalHit ? 4 : 2) + Modifier;
-            }
-        }
+        public bool ShepherdSummons { get; set; } = false;
 
         public class Shortbow : BaseAction
         {
@@ -44,12 +30,12 @@ namespace RegressionTest
         {
             Name = "Erven";
             AC = 14;
-            Health = 45;
-            MaxHealth = 45;
-            HealingThreshold = 18;
+            Health = 31;
+            MaxHealth = 31;
+            HealingThreshold = 12;
             Group = Team.TeamOne;
             Priority = HealPriority.Low;
-            InitMod = 2;
+            InitMod = 3;
             MyType = CreatureType.Summon;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 12, Mod = 1, Save = 1 });
@@ -60,12 +46,25 @@ namespace RegressionTest
             Abilities.Add(AbilityScore.Charisma, new Stat { Score = 14, Mod = 2, Save = 2 });
         }
 
+        public override void Init()
+        {
+            base.Init();
+            
+            if (ShepherdSummons)
+            {
+                Health = 45;
+                MaxHealth = 45;
+            }
+            else
+            {
+                Health = 31;
+                MaxHealth = 31;
+            }
+        }
+
         public override BaseAction PickAction()
         {
-            if (Dice.D4() == 1)
-                return new Ram { Time = BaseAction.ActionTime.Action };
-
-            return new Shortbow { Time = BaseAction.ActionTime.Action };
+            return new Shortbow { Time = BaseAction.ActionTime.Action, IsMagical = ShepherdSummons ? true : false };
         }
     }
 }

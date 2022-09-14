@@ -8,7 +8,11 @@ namespace RegressionTest
 {
     public enum SpellEffectType
     {
-        SynapticStatic
+        SynapticStatic,
+        Bless,
+        Bane,
+        UnsettlingWords,
+        HypnoticPattern
     }
 
     public class SpellEffect

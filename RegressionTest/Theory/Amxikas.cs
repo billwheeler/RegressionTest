@@ -6,52 +6,38 @@ using System.Threading.Tasks;
 
 namespace RegressionTest
 {
-    public class Paladin : BaseCharacter
+    public class Amxikas : BaseCharacter
     {
-        public class Warhammer : PaladinBaseWeapon
+        public class RevenantBlade : AmxikasBaseWeapon
         {
-            public Warhammer()
+            public RevenantBlade()
             {
-                Desc = "Warhammer";
-                AttackModifier = 9;
-                Modifier = 7;
+                Desc = "Revenant Blade";
             }
 
             public override int Amount()
             {
-                int damage = Dice.D8(CriticalHit ? 2 : 1);
+                int damage = (Time != ActionTime.BonusAction) ?
+                    Dice.D4(CriticalHit ? 4 : 2) :
+                    Dice.D4(CriticalHit ? 2 : 1);
+
                 damage += TallyBuffs();
+
                 return damage + Modifier;
             }
         }
 
-        public class ShieldBash : PaladinBaseWeapon
+        public abstract class AmxikasBaseWeapon : BaseAction
         {
-            public ShieldBash()
-            {
-                Desc = "Shield Bash";
-                AttackModifier = 9;
-                Modifier = 5;
-            }
-
-            public override int Amount()
-            {
-                int damage = Dice.D4(CriticalHit ? 2 : 1);
-                damage += TallyBuffs();
-                return damage + Modifier;
-            }
-        }
-
-        public abstract class PaladinBaseWeapon : BaseAction
-        {
-            public Paladin parent { get; set; }
+            public Amxikas parent { get; set; }
 
             private string _desc = string.Empty;
             private bool _smitedThisTurn = false;
 
             // some heuristics for smiting
+            private bool enemyIsNemesis = false;
             private bool enemyIsUndead = false;
-            private bool enemyIsHVT = false;
+            private bool enemyIsFiend = false;
 
             public override string Desc
             {
@@ -65,24 +51,37 @@ namespace RegressionTest
                         output += " (smite)";
                     }
 
+                    if (enemyIsNemesis && parent.VowOfEnmityRunning)
+                    {
+                        output += " (enmity)";
+                    }
+
                     return output;
                 }
                 set { _desc = value; }
             }
 
-            public PaladinBaseWeapon()
+            public AmxikasBaseWeapon()
             {
                 Type = ActionType.MeleeAttack;
                 AttackModifier = 9;
                 Modifier = 5;
+                IsMagical = true;
             }
 
             public override void PreHit(BaseCharacter attacker, BaseCharacter target)
             {
                 base.PreHit(attacker, target);
 
+                enemyIsNemesis = false;
                 enemyIsUndead = target.IsUndead;
-                enemyIsHVT = target.HighValueTarget;
+                enemyIsFiend = target.IsFiend;
+
+                if (parent.Context.GetIndexByID(target.ID) == parent.MyNemesis)
+                {
+                    RollType = AbilityRoll.Advantage;
+                    enemyIsNemesis = true;
+                }
             }
 
             public int TallyBuffs()
@@ -96,7 +95,10 @@ namespace RegressionTest
 
                 if (parent.ShouldUseSmites)
                 {
-                    int percentToSmite = enemyIsHVT ? 40 : 20;
+                    int percentToSmite = 5;
+
+                    if (enemyIsNemesis)
+                        percentToSmite = 40;
 
                     if (CriticalHit)
                         percentToSmite = 100;
@@ -120,14 +122,16 @@ namespace RegressionTest
                 int count = 2;
                 if (enemyIsUndead)
                     count += 1;
+                else if (enemyIsFiend)
+                    count += 1;
 
                 if (isCrit)
                     count *= 2;
 
-                if (enemyIsUndead && count > 6)
+                if ((enemyIsUndead || enemyIsFiend) && count > 6)
                     count = 6;
 
-                if (!enemyIsUndead && count > 5)
+                if (!(enemyIsUndead || enemyIsFiend) && count > 5)
                     count = 5;
 
                 return count;
@@ -136,13 +140,14 @@ namespace RegressionTest
 
         public class LayOnHands : SpellAction
         {
-            public Paladin parent { get; set; }
+            public Amxikas parent { get; set; }
 
             public LayOnHands()
             {
                 Desc = "Lay On Hands";
                 Type = ActionType.Heal;
                 Time = ActionTime.Action;
+                IsMagical = true;
             }
 
             public override int Amount()
@@ -151,6 +156,22 @@ namespace RegressionTest
                 if (parent.LayOnHandsPool < 20)
                     amount = parent.LayOnHandsPool;
                 return amount;
+            }
+        }
+
+        public class VowOfEnmityActivate : BaseAction
+        {
+            public VowOfEnmityActivate()
+            {
+                Desc = "Vow of Enmity";
+                Type = ActionType.Activate;
+                Time = ActionTime.BonusAction;
+                IsMagical = true;
+            }
+
+            public override int Amount()
+            {
+                return 0;
             }
         }
 
@@ -169,30 +190,32 @@ namespace RegressionTest
             }
         }
 
-        public bool CanBonusActionAttack { get; set; } = false;
+        public bool CanVowOfEnmity { get; set; } = false;
+        public bool VowOfEnmityRunning { get; set; } = false;
         public bool CanSpiritShroud { get; set; } = false;
         public bool SpiritShroudRunning { get; set; } = false;
+
         public bool ShouldUseSmites { get; set; } = false;
         public int LayOnHandsPool { get; set; } = 45;
+        public int MyNemesis { get; set; } = -1;
 
-        public Paladin()
+        public Amxikas()
         {
-            Name = "Murie";
-            AC = 20;
-            Health = 85;
-            MaxHealth = 85;
-            HealingThreshold = 18;
+            Name = "Amxikas";
+            AC = 18;
+            Health = 76;
+            MaxHealth = 76;
+            HealingThreshold = 19;
             Group = Team.TeamOne;
-            Healer = false;
+            Healer = true;
             Priority = HealPriority.Medium;
-            InitMod = 4;
-            WarCaster = false;
+            InitMod = 5;
+            WarCaster = true;
             MyType = CreatureType.PC;
-            ShouldUseSmites = true;
-            CanSpiritShroud = true;
+            OpportunityAttackChance = 60;
 
-            Abilities.Add(AbilityScore.Strength, new Stat { Score = 20, Mod = 5, Save = 8 });
-            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 10, Mod = 0, Save = 3 });
+            Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 3 });
+            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 20, Mod = 5, Save = 8 });
             Abilities.Add(AbilityScore.Constitution, new Stat { Score = 14, Mod = 2, Save = 5 });
             Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 8, Mod = -1, Save = 2 });
             Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 10, Mod = 0, Save = 7 });
@@ -203,19 +226,38 @@ namespace RegressionTest
         {
             base.Init();
             SpiritShroudRunning = false;
-            LayOnHandsPool = 45;
-            CanBonusActionAttack = false;
+            VowOfEnmityRunning = false;
+
             ShouldUseSmites = true;
+            CanVowOfEnmity = true;
             CanSpiritShroud = true;
+        }
+
+        public override void OnNewEncounter()
+        {
+            MyNemesis = Context.PickHighValueTarget(Group);
+            CanVowOfEnmity = MyNemesis != -1;
         }
 
         public override BaseAction PickAction()
         {
-            return new Warhammer { Time = BaseAction.ActionTime.Action, TotalToRun = 2, parent = this };
+            if (HealTarget != null && LayOnHandsPool > 0 && Dice.D100() <= 33)
+            {
+                return new LayOnHands { parent = this };
+            }
+
+            return new RevenantBlade { Time = BaseAction.ActionTime.Action, TotalToRun = 2, parent = this };
         }
 
         public override BaseAction PickBonusAction()
         {
+            if (CanVowOfEnmity && !VowOfEnmityRunning)
+            {
+                CanVowOfEnmity = false;
+                VowOfEnmityRunning = true;
+                return new VowOfEnmityActivate();
+            }
+
             if (CanSpiritShroud && !Concentrating && !SpiritShroudRunning)
             {
                 SpiritShroudRunning = true;
@@ -223,24 +265,23 @@ namespace RegressionTest
                 return new SpiritShroudActivate();
             }
 
-            return new ShieldBash { Time = BaseAction.ActionTime.BonusAction, parent = this };
+            return new RevenantBlade { Time = BaseAction.ActionTime.BonusAction, TotalToRun = 1, parent = this };
         }
 
         public override BaseAction PickReaction(bool opportunityAttack)
         {
-            return new Warhammer { Time = BaseAction.ActionTime.Reaction, TotalToRun = 1, parent = this };
-        }
-
-        public override void OnNewRound()
-        {
-            base.OnNewRound();
-            CanBonusActionAttack = false;
+            return new RevenantBlade { Time = BaseAction.ActionTime.Reaction, parent = this };
         }
 
         public override void OnNewTurn()
         {
             base.OnNewTurn();
-            if (CanSpiritShroud && !Concentrating && !SpiritShroudRunning)
+
+            if (CanVowOfEnmity && !VowOfEnmityRunning)
+            {
+                BonusActionFirst = true;
+            }
+            else if (CanSpiritShroud && !Concentrating && !SpiritShroudRunning)
             {
                 BonusActionFirst = true;
             }
@@ -261,6 +302,7 @@ namespace RegressionTest
         {
             base.OnDeath();
 
+            VowOfEnmityRunning = false;
             SpiritShroudRunning = false;
         }
     }

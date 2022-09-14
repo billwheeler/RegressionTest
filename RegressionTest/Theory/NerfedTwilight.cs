@@ -11,7 +11,7 @@ namespace RegressionTest
         public bool SpiritGuardiansRunning { get; set; }
         public bool TwilightSanctuaryRunning { get; set; }
 
-        public bool ShouldBoomBoom { get; set; } = true;
+        public bool ShouldBoomBoom { get; set; } = false;
 
         public class TollOfTheDead : BaseAction
         {
@@ -49,10 +49,13 @@ namespace RegressionTest
 
                 if (parent.ShouldBoomBoom)
                 {
-                    damage += Dice.D8(CriticalHit ? 2 : 1);
-                    if (Dice.D100() <= 33)
+                    if (Time != ActionTime.Reaction || parent.WarCaster)
                     {
-                        damage += Dice.D8(CriticalHit ? 4 : 2);
+                        damage += Dice.D8(CriticalHit ? 2 : 1);
+                        if (Dice.D100() <= 33)
+                        {
+                            damage += Dice.D8(CriticalHit ? 4 : 2);
+                        }
                     }
                 }
 
@@ -149,6 +152,7 @@ namespace RegressionTest
             WarCaster = false;
             HasAdvantageOnInitiative = true;
             MyType = CreatureType.PC;
+            OpportunityAttackChance = 2;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 16, Mod = 3, Save = 3 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 8, Mod = -1, Save = -1 });
@@ -170,7 +174,7 @@ namespace RegressionTest
             if (Healer && !TwilightSanctuaryRunning)
             {
                 TwilightSanctuaryRunning = true;
-                Context.GiveTempHP(Group, this, Dice.D6() + 10);
+                Context.GiveTempHP(Group, this, Dice.D6() + 9);
                 return new TwilightSanctuaryActivate();
             }
 
@@ -184,30 +188,29 @@ namespace RegressionTest
             int rando = Dice.D100();
             if (ShouldBoomBoom)
             {
-                if (rando >= 80)
+                if (rando >= 95)
                 {
                     return new TollOfTheDead();
                 }
-                else if (rando < 80 && rando >= 40)
+                else if (rando < 95 && rando >= 35)
                 {
-                    IsDodging = true;
-                    return new DodgeAction();
+                    return new Warhammer { parent = this };
                 }
             }
             else
             {
-                if (rando >= 67)
+                if (rando >= 90)
                 {
                     return new TollOfTheDead();
                 }
-                else if (rando < 67 && rando >= 33)
+                else if (rando <= 10)
                 {
-                    IsDodging = true;
-                    return new DodgeAction();
+                    return new Warhammer { parent = this };
                 }
             }
 
-            return new Warhammer { parent = this };
+            IsDodging = true;
+            return new DodgeAction();
         }
 
         public override BaseAction PickBonusAction()
@@ -223,6 +226,11 @@ namespace RegressionTest
             }
 
             return new NoAction();
+        }
+
+        public override BaseAction PickReaction(bool opportunityAttack)
+        {
+            return new Warhammer { Time = BaseAction.ActionTime.Reaction, parent = this };
         }
 
         public override BaseAction PickPreTurn(BaseCharacter target)

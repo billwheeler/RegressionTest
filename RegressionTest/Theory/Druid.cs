@@ -10,40 +10,30 @@ namespace RegressionTest
     {
         public bool BearTotemRunning { get; set; } = false;
         public bool ConjureRunning { get; set; } = false;
+        public bool BlessRunning { get; set; } = false;
 
         public bool BearTotemUsed { get; set; } = false;
         public bool ConjureUsed { get; set; } = false;
+        public bool BlessUsed { get; set; } = false;
 
-        public class TollOfTheDead : BaseAction
+        public class Firebolt : BaseAction
         {
-            public TollOfTheDead()
+            public Firebolt()
             {
-                Desc = "Toll of the Dead";
-                Type = ActionType.SpellSave;
+                Desc = "Firebolt";
+                Type = ActionType.SpellAttack;
                 Time = ActionTime.Action;
-                Ability = AbilityScore.Wisdom;
-                DC = 17;
+                AttackModifier = 8;
+                Modifier = 0;
+                TotalToRun = 1;
+                IsMagical = true;
             }
 
             public override int Amount()
             {
-                return Dice.D12(2);
-            }
-        }
+                int damage = Dice.D10(CriticalHit ? 4 : 2);
 
-        public class Scimitar : BaseAction
-        {
-            public Scimitar()
-            {
-                Desc = "Scimitar";
-                Type = ActionType.MeleeAttack;
-                AttackModifier = 6;
-                Modifier = 2;
-            }
-
-            public override int Amount()
-            {
-                return Dice.D6(CriticalHit ? 2 : 1) + Modifier;
+                return damage + Modifier;
             }
         }
 
@@ -94,10 +84,10 @@ namespace RegressionTest
 
         public Druid()
         {
-            Name = "Cralamir";
+            Name = "Marcoryl";
             AC = 17;
-            Health = 83;
-            MaxHealth = 83;
+            Health = 75;
+            MaxHealth = 75;
             HealingThreshold = 18;
             Group = Team.TeamOne;
             Healer = true;
@@ -107,12 +97,12 @@ namespace RegressionTest
             MyType = CreatureType.PC;
             PostTurnNotify = true;
 
-            Abilities.Add(AbilityScore.Strength, new Stat { Score = 8, Mod = -1, Save = -1 });
+            Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 0 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 14, Mod = 2, Save = 2 });
-            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 3 });
+            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 7 });
             Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 12, Mod = 1, Save = 5 });
-            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 20, Mod = 5, Save = 9 });
-            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 10, Mod = 0, Save = 0 });
+            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 18, Mod = 4, Save = 8 });
+            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 9, Mod = -1, Save = -1 });
         }
 
         public override void Init()
@@ -136,14 +126,14 @@ namespace RegressionTest
                 return new ConjureWoodlandBeingsActivate();
             }
 
-            return new TollOfTheDead { Time = BaseAction.ActionTime.Action };
+            return new Firebolt { Time = BaseAction.ActionTime.Action };
         }
 
         public override BaseAction PickBonusAction()
         {
             if (!BearTotemUsed && !BearTotemRunning)
             {
-                Context.GiveTempHP(Group, this, 15);
+                Context.GiveTempHP(Group, this, 13);
                 BearTotemRunning = true;
                 BearTotemUsed = true;
                 return new BearTotemActivate();
@@ -151,7 +141,7 @@ namespace RegressionTest
 
             if (Healer && HealTarget != null)
             {
-                return new HealingWord { Modifier = 5, Level = SpellAction.SpellLevel.Three };
+                return new HealingWord { Modifier = 5, Level = SpellAction.SpellLevel.One };
             }
 
             return new NoAction();

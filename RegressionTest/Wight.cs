@@ -17,12 +17,12 @@ namespace RegressionTest
                 Time = ActionTime.Action;
                 AttackModifier = 9;
                 Modifier = 5;
-                TotalToRun = 2;
+                TotalToRun = 3;
             }
 
             public override int Amount()
             {
-                return Dice.D8(CriticalHit ? 4 : 2) + Modifier;
+                return Dice.D10(CriticalHit ? 4 : 2) + Modifier;
 
             }
         }
@@ -40,7 +40,7 @@ namespace RegressionTest
 
             public override int Amount()
             {
-                return Dice.D6(4);
+                return Dice.D10(5);
             }
         }
 
@@ -49,10 +49,12 @@ namespace RegressionTest
             Name = "Wight";
             AC = 14;
             InitMod = 4;
-            Health = 85;
-            MaxHealth = 85;
+            Health = 127;
+            MaxHealth = 127;
             Group = Team.TeamTwo;
             Priority = HealPriority.Medium;
+            IsUndead = true;
+            ResistsNonmagical = true;
         }
 
         public override BaseAction PickAction()

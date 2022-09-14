@@ -11,12 +11,37 @@ namespace RegressionTest
         Normal,
         Advantage,
         Disadvantage,
-        ElvinAccuracy
+        ElvenAccuracy
+    }
+
+    public static class EnumDesc
+    {
+        public static string AbilityRoll(AbilityRoll abilityRoll)
+        {
+            switch (abilityRoll)
+            {
+                case RegressionTest.AbilityRoll.Normal:
+                    return "Normal";
+                case RegressionTest.AbilityRoll.Advantage:
+                    return "Advantage";
+                case RegressionTest.AbilityRoll.Disadvantage:
+                    return "Disadvantage";
+                case RegressionTest.AbilityRoll.ElvenAccuracy:
+                    return "Elven Accuracy";
+            }
+
+            return "Normal";
+        }
     }
 
     public class DiceRoller
     {
         protected Random Rnd { get; set; } = new Random(DateTime.Now.Millisecond);
+
+        public int JustRandom(int min, int max)
+        {
+            return Rnd.Next(min, max + 1);
+        }
 
         public int D4(int number = 1)
         {
@@ -96,6 +121,20 @@ namespace RegressionTest
             return total;
         }
 
+        public int ElvenAccuracy()
+        {
+            int first = Rnd.Next(1, 21);
+            int second = Rnd.Next(1, 21);
+            int third = Rnd.Next(1, 21);
+
+            if (first > second && first > third)
+                return first;
+            else if (second > first && second > third)
+                return second;
+            else
+                return third;
+        }
+
         public int Advantage()
         {
             int first = Rnd.Next(1, 21);
@@ -139,6 +178,8 @@ namespace RegressionTest
                     return Advantage();
                 case AbilityRoll.Disadvantage:
                     return Disadvantage();
+                case AbilityRoll.ElvenAccuracy:
+                    return ElvenAccuracy();
                 default:
                     return D20();
             }

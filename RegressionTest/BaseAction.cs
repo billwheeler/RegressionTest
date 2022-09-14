@@ -11,7 +11,8 @@ namespace RegressionTest
         public virtual string Desc { get; set; }
  
         public DiceRoller Dice { get; set; } = new DiceRoller();
-        
+
+        public int MinTargets { get; set; } = 1;
         public int MaxTargets { get; set; } = 1;
         
         public int AttackModifier { get; set; } = 0;
@@ -19,15 +20,24 @@ namespace RegressionTest
         
         public int TotalToRun { get; set; } = 1;
         public int CurrentRunning { get; set; } = 0;
+        public int CurrentHits { get; set; } = 0;
+        public bool HasCritted { get; set; } = false;
 
         public bool CriticalHit { get; set; } = false;
         public int CriticalThreshold { get; set; } = 20;
         public bool HalfDamageOnMiss { get; set; } = false;
+        public bool Damageless { get; set; } = false;
+
+        public AbilityRoll RollType { get; set; } = AbilityRoll.Normal;
 
         public AbilityScore Ability { get; set; } = AbilityScore.Wisdom;
         public int DC { get; set; } = 10;
 
         public SpellEffect EffectToApply { get; set; } = null;
+
+        public bool IsMagical { get; set; } = false;
+
+        public bool PotentiallyPowerful { get; set; } = false;
 
         public enum ActionType
         {
@@ -38,7 +48,8 @@ namespace RegressionTest
             MeleeAttack,
             RangedAttack,
             SpellAttack,
-            SpellSave
+            SpellSave,
+            Apply
         }
 
         public ActionType Type { get; set; } = ActionType.MeleeAttack;
@@ -84,7 +95,14 @@ namespace RegressionTest
                     hits = !target.SavingThrow(Ability, DC);
                     if (hits && EffectToApply != null)
                     {
-                        target.ActiveEffect = EffectToApply;
+                        if (EffectToApply.Type == SpellEffectType.HypnoticPattern)
+                        {
+                            target.Incapacitated = true;
+                        }
+                        else
+                        {
+                            target.ActiveEffects.Add(EffectToApply.Type, EffectToApply);
+                        }
                     }
 
                     if (HalfDamageOnMiss)
@@ -120,36 +138,86 @@ namespace RegressionTest
         protected virtual bool AttackType(BaseCharacter attacker, BaseCharacter target)
         {
             CriticalHit = false;
-            var abilityRoll = AbilityRoll.Normal;
+            var abilityRoll = RollType;
+
+            if (target.IsHidden)
+            {
+                switch (abilityRoll)
+                {
+                    case AbilityRoll.Advantage:
+                    case AbilityRoll.ElvenAccuracy:
+                        abilityRoll = AbilityRoll.Normal;
+                        break;
+                    default:
+                        abilityRoll = AbilityRoll.Disadvantage;
+                        break;
+                }
+            }
 
             if (target.IsDodging)
-                abilityRoll = AbilityRoll.Disadvantage;
+            {
+                switch (abilityRoll)
+                {
+                    case AbilityRoll.Advantage:
+                    case AbilityRoll.ElvenAccuracy:
+                        abilityRoll = AbilityRoll.Normal;
+                        break;
+                    default:
+                        abilityRoll = AbilityRoll.Disadvantage;
+                        break;
+                }
+            }
 
             int mod = AttackModifier;
             int roll = Dice.MakeAbilityRoll(abilityRoll);
 
-            if (roll >= CriticalThreshold)
-                CriticalHit = true;
-
-            if (attacker.HasBless)
+            if (attacker.ActiveEffects.ContainsKey(SpellEffectType.Bless))
+            {
                 roll += Dice.D4();
+            }
 
-            target.OnBeforeHitCalc(roll);
+            if (attacker.ActiveEffects.ContainsKey(SpellEffectType.Bane))
+            {
+                roll -= Dice.D4();
+            }
 
-            var result = (roll + mod) >= target.AC ? true : false;
+            if (attacker.ActiveEffects.ContainsKey(SpellEffectType.SynapticStatic))
+            {
+                roll -= Dice.D6();
+            }
 
-            target.OnAfterHitCalc();
+            if (attacker.DebugOutput)
+            {
+                Console.WriteLine($"{attacker.Name} rolled with {EnumDesc.AbilityRoll(abilityRoll)}, for a result of {roll}");
+            }
+
+            if (roll >= CriticalThreshold)
+            {
+                CriticalHit = true;
+                HasCritted = true;
+            }
+
+            target.PreHitCalc(roll, mod, PotentiallyPowerful, CriticalHit);
+
+            int armorClass = target.AC;
+            if (target.HasShieldRunning)
+                armorClass += 5;
+
+            var result = (roll + mod) >= armorClass ? true : false;
 
             return result;
         }
 
-        public abstract int Amount();
+        public virtual int Amount()
+        {
+            return 0;
+        }
 
         public string HitDesc()
         {
             if (Type == ActionType.SpellSave)
             {
-                return Result == DamageAmount.Full ? "target failed save" : "target made save";
+                return Result == DamageAmount.Full ? "failed save" : "made save";
             }
 
             if (CriticalHit)
@@ -163,6 +231,51 @@ namespace RegressionTest
 
         public void Dispose()
         {
+        }
+
+        public bool ShouldPowerAttack(int targetAC, int lowerBound, int upperBound)
+        {
+            switch (RollType)
+            {
+                case AbilityRoll.Advantage:
+                    lowerBound += 5;
+                    upperBound += 5;
+                    break;
+                case AbilityRoll.ElvenAccuracy:
+                    lowerBound += 8;
+                    upperBound += 8;
+                    break;
+                case AbilityRoll.Disadvantage:
+                    lowerBound -= 5;
+                    upperBound -= 5;
+                    break;
+            }
+            
+            // too high, don't bother
+            if (targetAC >= upperBound)
+            {
+                // did we crit at any point? then screw it and go for it
+                if (HasCritted)
+                    return true;
+
+                return false;
+            }
+
+            // too low, always use
+            else if (targetAC >= lowerBound)
+            {
+                return true;
+            }
+
+            // we're in the questionable range, first attack try for it
+            if (CurrentRunning == 1)
+                return true;
+
+            // if we had at least one hit, go for it
+            if (CurrentRunning >= 2 && CurrentHits >= 1)
+                return true;
+
+            return false;
         }
     }
 
@@ -203,8 +316,6 @@ namespace RegressionTest
             Desc = "(Nothing)";
             Type = ActionType.None;
         }
-
-        public override int Amount() { return 0; }
     }
 
     public class CureWounds : SpellAction
@@ -219,8 +330,7 @@ namespace RegressionTest
 
         public override int Amount()
         {
-            int die = 1;
-
+            int die = (int)Level;
             return Dice.D8(die) + Modifier;
         }
     }
@@ -239,21 +349,6 @@ namespace RegressionTest
         {
             int die = (int)Level;
             return Dice.D4(die) + Modifier;
-        }
-    }
-
-    public class EldritchBlast : SpellAction
-    {
-        public EldritchBlast()
-        {
-            Desc = "Eldritch Blast";
-            Level = SpellLevel.Cantrip;
-            Type = ActionType.SpellAttack;
-        }
-
-        public override int Amount()
-        {
-            return 0;
         }
     }
 
@@ -282,10 +377,56 @@ namespace RegressionTest
             Level = SpellLevel.One;
             Type = ActionType.Activate;
         }
+    }
+
+    public class SynapticStatic : BaseAction
+    {
+        public SynapticStatic(int dc = 17)
+        {
+            Desc = "Synaptic Static";
+            Type = ActionType.SpellSave;
+            Time = ActionTime.Action;
+            Ability = AbilityScore.Intelligence;
+            HalfDamageOnMiss = true;
+            MinTargets = 3;
+            MaxTargets = 5;
+            DC = dc;
+
+            EffectToApply = new SpellEffect
+            {
+                Ability = AbilityScore.Intelligence,
+                DC = dc,
+                Name = "Synaptic Static",
+                Type = SpellEffectType.SynapticStatic
+            };
+        }
 
         public override int Amount()
         {
-            return 0;
+            return Dice.D6(8);
+        }
+    }
+
+    public class HypnoticPattern : BaseAction
+    {
+        public HypnoticPattern(int dc = 17)
+        {
+            Desc = "Hypnotic Pattern";
+            Type = ActionType.SpellSave;
+            Time = ActionTime.Action;
+            Ability = AbilityScore.Wisdom;
+            Damageless = true;
+            MinTargets = 2;
+            MaxTargets = 6;
+            DC = dc;
+
+            EffectToApply = new SpellEffect
+            {
+                Ability = AbilityScore.Wisdom,
+                DC = dc,
+                Name = "Hypnotic Pattern",
+                Type = SpellEffectType.HypnoticPattern
+            };
         }
     }
 }

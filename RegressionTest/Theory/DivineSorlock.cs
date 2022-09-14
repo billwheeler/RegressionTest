@@ -170,22 +170,6 @@ namespace RegressionTest
 
             SpiritGuardiansRunning = false;
         }
-
-        public override void OnNewRound()
-        {
-            base.OnNewRound();
-
-            AC = 19;
-        }
-
-        public override void OnBeforeHitCalc(int roll)
-        {
-            // cast shield!
-            if (roll >= 15 && AC == 19)
-            {
-                AC = 24;
-            }
-        }
     }
 
 }

@@ -67,6 +67,8 @@ namespace RegressionTest
             Group = Team.TeamTwo;
             PreTurnNotify = true;
             HighValueTarget = true;
+            IsUndead = true;
+            ResistsNonmagical = true;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 22, Mod = 6, Save = 6 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 19, Mod = 4, Save = 4 });
@@ -91,10 +93,13 @@ namespace RegressionTest
 
         public override BaseAction PickPreTurn(BaseCharacter target)
         {
-            // we'll say that only 67% of the time an enemy is in range
-            if (Alive && Dice.D100() <= 67)
+            if (!Incapacitated)
             {
-                return new AnnihilatingAura();
+                // we'll say that only 67% of the time an enemy is in range
+                if (Alive && Dice.D100() <= 67)
+                {
+                    return new AnnihilatingAura();
+                }
             }
 
             return new NoAction();

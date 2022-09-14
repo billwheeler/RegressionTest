@@ -6,13 +6,9 @@ using System.Threading.Tasks;
 
 namespace RegressionTest
 {
-    public class Cleric : BaseCharacter
+    public class Murie : BaseCharacter
     {
         public bool SpiritGuardiansRunning { get; set; }
-        public bool TwilightSanctuaryRunning { get; set; }
-
-        public bool ShouldTwilight { get; set; } = false;
-        public bool ShouldBoomBoom { get; set; } = false;
 
         public class TollOfTheDead : BaseAction
         {
@@ -22,7 +18,8 @@ namespace RegressionTest
                 Type = ActionType.SpellSave;
                 Time = ActionTime.Action;
                 Ability = AbilityScore.Wisdom;
-                DC = 17;
+                DC = 16;
+                IsMagical = true;
             }
 
             public override int Amount()
@@ -33,7 +30,9 @@ namespace RegressionTest
 
         public class Warhammer : BaseAction
         {
-            public Cleric parent { get; set; }
+            public readonly bool CanUseBoomingBlade = true;
+
+            public Murie parent { get; set; }
 
             public Warhammer()
             {
@@ -42,16 +41,18 @@ namespace RegressionTest
                 Time = ActionTime.Action;
                 AttackModifier = 6;
                 Modifier = 2;
+                IsMagical = true;
             }
 
             public override int Amount()
             {
                 int damage = Dice.D8(CriticalHit ? 4 : 2);
 
-                if (parent.ShouldBoomBoom)
+                if (CanUseBoomingBlade)
                 {
                     damage += Dice.D8(CriticalHit ? 2 : 1);
-                    if (Dice.D100() <= 33)
+                    int percentageEnemyMoves = (Time == ActionTime.Reaction) ? 90 : 25;
+                    if (Dice.D100() <= percentageEnemyMoves)
                     {
                         damage += Dice.D8(CriticalHit ? 4 : 2);
                     }
@@ -63,25 +64,29 @@ namespace RegressionTest
 
         public class Mace : BaseAction
         {
-            public Cleric parent { get; set; }
+            public readonly bool CanUseBoomingBlade = true;
+
+            public Murie parent { get; set; }
 
             public Mace()
             {
                 Desc = "Mace";
                 Type = ActionType.MeleeAttack;
                 Time = ActionTime.Action;
-                AttackModifier = 6;
-                Modifier = 2;
+                AttackModifier = 7;
+                Modifier = 3;
+                IsMagical = true;
             }
 
             public override int Amount()
             {
-                int damage = Dice.D6(CriticalHit ? 2 : 1) + Dice.D8(CriticalHit ? 2 : 1);
+                int damage = Dice.D6(CriticalHit ? 4 : 2);
 
-                if (parent.ShouldBoomBoom)
+                if (CanUseBoomingBlade)
                 {
                     damage += Dice.D8(CriticalHit ? 2 : 1);
-                    if (Dice.D100() <= 33)
+                    int percentageEnemyMoves = (Time == ActionTime.Reaction) ? 90 : 25;
+                    if (Dice.D100() <= percentageEnemyMoves)
                     {
                         damage += Dice.D8(CriticalHit ? 4 : 2);
                     }
@@ -98,8 +103,9 @@ namespace RegressionTest
                 Desc = "Spiritual Weapon";
                 Type = ActionType.SpellAttack;
                 Time = ActionTime.BonusAction;
-                AttackModifier = 9;
-                Modifier = 5;
+                AttackModifier = 8;
+                Modifier = 4;
+                IsMagical = true;
             }
 
             public override int Amount()
@@ -132,7 +138,8 @@ namespace RegressionTest
                 Time = ActionTime.PreTurn;
                 HalfDamageOnMiss = true;
                 Ability = AbilityScore.Wisdom;
-                DC = 17;
+                DC = 16;
+                IsMagical = true;
             }
 
             public override int Amount()
@@ -147,42 +154,11 @@ namespace RegressionTest
             }
         }
 
-        public class TwilightSanctuaryActivate : BaseAction
+        public Murie()
         {
-            public TwilightSanctuaryActivate()
-            {
-                Desc = "Twilight Sanctuary";
-                Type = ActionType.Activate;
-                Time = ActionTime.Action;
-            }
-
-            public override int Amount()
-            {
-                return 0;
-            }
-        }
-
-        public class TwilightSanctuaryPostTurn : BaseAction
-        {
-            public TwilightSanctuaryPostTurn()
-            {
-                Desc = "Twilight Sanctuary";
-                Type = ActionType.GrantTempHp;
-                Time = ActionTime.PostTurn;
-            }
-
-            public override int Amount()
-            {
-                //return Dice.D8();
-                return Dice.D6() + 11;
-            }
-        }
-
-        public Cleric()
-        {
-            Name = "Leonid";
-            AC = 20;
-            InitMod = -1 + 4;
+            Name = "Murie";
+            AC = 22;
+            InitMod = -1;
             Health = 75;
             MaxHealth = 75;
             Group = Team.TeamOne;
@@ -190,26 +166,23 @@ namespace RegressionTest
             HealingThreshold = 18;
             Priority = HealPriority.High;
             PreTurnNotify = true;
-            PostTurnNotify = true;
-            TwilightSanctuaryRunning = false;
             SpiritGuardiansRunning = false;
             WarCaster = true;
             MyType = CreatureType.PC;
+            OpportunityAttackChance = 10;
 
-
-            Abilities.Add(AbilityScore.Strength, new Stat { Score = 15, Mod = 2, Save = 2 });
+            Abilities.Add(AbilityScore.Strength, new Stat { Score = 16, Mod = 3, Save = 3 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 8, Mod = -1, Save = -1 });
-            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 3 });
+            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 7 });
             Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 10, Mod = 0, Save = 0 });
-            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 20, Mod = 5, Save = 9 });
-            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 8, Mod = -1, Save = 3 });
+            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 18, Mod = 4, Save = 8 });
+            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 10, Mod = 0, Save = 4 });
         }
 
         public override void Init()
         {
             base.Init();
             SpiritGuardiansRunning = false;
-            TwilightSanctuaryRunning = false;
         }
 
         public override BaseAction PickAction()
@@ -222,32 +195,17 @@ namespace RegressionTest
             }
 
             int rando = Dice.D100();
-            if (ShouldBoomBoom)
+            if (rando >= 90)
             {
-                if (rando >= 80)
-                {
-                    return new TollOfTheDead();
-                }
-                else if (rando < 80 && rando >= 40)
-                {
-                    IsDodging = true;
-                    return new DodgeAction();
-                }
+                return new TollOfTheDead();
             }
-            else
+            else if (rando < 90 && rando >= 30)
             {
-                if (rando >= 67)
-                {
-                    return new TollOfTheDead();
-                }
-                else if (rando < 67 && rando >= 33)
-                {
-                    IsDodging = true;
-                    return new DodgeAction();
-                }
+                return new Mace { parent = this };
             }
 
-            return new Warhammer { parent = this };
+            IsDodging = true;
+            return new DodgeAction { Time = BaseAction.ActionTime.Action };
         }
 
         public override BaseAction PickBonusAction()
@@ -265,29 +223,52 @@ namespace RegressionTest
             return new NoAction();
         }
 
+        public override BaseAction PickReaction(bool opportunityAttack)
+        {
+            return new Mace { Time = BaseAction.ActionTime.Reaction, TotalToRun = 1, parent = this };
+        }
+
         public override BaseAction PickPreTurn(BaseCharacter target)
         {
-            if (SpiritGuardiansRunning)
+            if (!target.Incapacitated)
             {
-                if (target.HighValueTarget)
-                    return new SpiritGuardiansPreTurn();
-
-                // we'll say that only 40% of the time an enemy is in range
-                if (Dice.D100() <= 40)
-                    return new SpiritGuardiansPreTurn();
+                if (SpiritGuardiansRunning)
+                {
+                    if (Dice.D100() <= GetSpiritGuardiansChance())
+                        return new SpiritGuardiansPreTurn();
+                }
             }
 
             return new NoAction();
         }
 
-        public override BaseAction PickPostTurn(BaseCharacter target)
+        private int GetSpiritGuardiansChance()
         {
-            if (TwilightSanctuaryRunning)
+            switch (Context.GetLivingEnemyCount(Group, false))
             {
-                if (Dice.D100() <= 90) return new TwilightSanctuaryPostTurn();
+                case 1:
+                    return 70;
+                case 2:
+                    return 63;
+                case 3:
+                    return 56;
+                case 4:
+                    return 49;
+                case 5:
+                    return 42;
+                case 6:
+                    return 35;
+                case 7:
+                    return 28;
+                case 8:
+                    return 21;
+                case 9:
+                    return 14;
+                case 10:
+                    return 7;
+                default:
+                    return 3;
             }
-
-            return new NoAction();
         }
 
         public override void OnFailConcentration()
@@ -302,7 +283,6 @@ namespace RegressionTest
             base.OnDeath();
 
             SpiritGuardiansRunning = false;
-            TwilightSanctuaryRunning = false;
         }
     }
 }

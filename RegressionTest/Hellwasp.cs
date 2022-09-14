@@ -17,6 +17,7 @@ namespace RegressionTest
                 Time = ActionTime.Action;
                 AttackModifier = 7;
                 Modifier = 4;
+                IsMagical = true;
             }
 
             public override int Amount()
@@ -56,6 +57,7 @@ namespace RegressionTest
             MaxHealth = 52;
             Group = Team.TeamTwo;
             Priority = HealPriority.Medium;
+            IsFiend = true;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 18, Mod = 4, Save = 4 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 15, Mod = 2, Save = 5 });

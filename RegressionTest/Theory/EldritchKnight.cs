@@ -14,13 +14,13 @@ namespace RegressionTest
         public bool UsedActionSurge { get; set; } = false;
         public bool UsedSecondWind { get; set; } = false;
 
-        public class Longsword : BaseAction
+        public class Scimitar : BaseAction
         {
             public EldritchKnight parent { get; set; }
 
-            public Longsword()
+            public Scimitar()
             {
-                Desc = "Longsword";
+                Desc = "Scimitar";
                 Type = ActionType.MeleeAttack;
                 AttackModifier = 9;
                 Modifier = 5;
@@ -28,7 +28,7 @@ namespace RegressionTest
 
             public override int Amount()
             {
-                return Dice.D10(CriticalHit ? 2 : 1) + Modifier;
+                return Dice.D6(CriticalHit ? 2 : 1) + Modifier;
             }
         }
 
@@ -101,9 +101,9 @@ namespace RegressionTest
         public EldritchKnight()
         {
             Name = "Amxikas";
-            AC = 18;
-            Health = 94;
-            MaxHealth = 94;
+            AC = 17;
+            Health = 85;
+            MaxHealth = 85;
             HealingThreshold = 18;
             Group = Team.TeamOne;
             Healer = false;
@@ -111,6 +111,7 @@ namespace RegressionTest
             InitMod = 5;
             MyType = CreatureType.PC;
             WarCaster = true;
+            OpportunityAttackChance = 40;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 4 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 20, Mod = 5, Save = 5 });
@@ -146,7 +147,7 @@ namespace RegressionTest
             //if (Dice.D100() <= 10)
             //    return new Longbow { Time = BaseAction.ActionTime.Action, TotalToRun = 2, parent = this };
 
-            return new Longsword { Time = BaseAction.ActionTime.Action, TotalToRun = total, parent = this };
+            return new Scimitar { Time = BaseAction.ActionTime.Action, TotalToRun = total, parent = this };
         }
 
         public override BaseAction PickBonusAction()
@@ -168,23 +169,7 @@ namespace RegressionTest
                 return new SecondWindActivate(amount);
             }
 
-            return new NoAction { Time = BaseAction.ActionTime.BonusAction };
-        }
-
-        public override void OnNewRound()
-        {
-            base.OnNewRound();
-
-            AC = 18;
-        }
-
-        public override void OnBeforeHitCalc(int roll)
-        {
-            // cast shield!
-            if (roll >= 17 && AC == 18)
-            {
-                AC = 23;
-            }
+            return new Scimitar { Time = BaseAction.ActionTime.BonusAction, TotalToRun = 1, parent = this };
         }
 
         public override void OnNewTurn()

@@ -59,11 +59,11 @@ namespace RegressionTest
         public bool Concentrating { get; set; } = false;
         public int Proficiency { get; set; } = 4;
 
+        public int OpportunityAttackChance { get; set; } = 0;
+
         public bool UsedReaction { get; set; } = false;
         public bool UsedAction { get; set; } = false;
         public bool UsedBonusAction { get; set; } = false;
-
-        public bool NewEnemy { get; set; } = false;
 
         public Saves Scores { get; set; } = new Saves();
 
@@ -79,16 +79,27 @@ namespace RegressionTest
         public bool HasAdvantageOnInitiative { get; set; } = false;
         public bool BonusActionFirst { get; set; } = false;
 
-        public bool HasBless { get; set; } = false;
         public bool HighValueTarget { get; set; } = false;
         public bool IsDodging { get; set; } = false;
+        public bool IsHidden { get; set; } = false;
+        public bool HasShieldRunning { get; set; } = false;
+
+        public bool GiftOfAlacrity { get; set; } = false;
 
         public Encounter Context { get; set; } = null;
 
         public CreatureType MyType { get; set; } = CreatureType.NPC;
         public bool BeenSummoned { get; set; } = false;
 
-        public SpellEffect ActiveEffect { get; set; } = null;
+        public Dictionary<SpellEffectType, SpellEffect> ActiveEffects { get; set; } = new Dictionary<SpellEffectType, SpellEffect>();
+
+        public bool DebugOutput { get; set; } = false;
+
+        public bool IsUndead { get; set; } = false;
+        public bool IsFiend { get; set; } = false;
+
+        public bool ResistsNonmagical { get; set; } = false;
+        public bool Incapacitated { get; set; } = false;
 
         public virtual BaseAttack PickAttack()
         {
@@ -105,13 +116,24 @@ namespace RegressionTest
             HasAdvantageOnInitiative = false;
             Concentrating = false;
             IsDodging = false;
+
+            ActiveEffects.Clear();
         }
 
         public void RollInitiative()
         {
             Init();
-            Initiative = Dice.MakeAbilityRoll(HasAdvantageOnInitiative ? AbilityRoll.Advantage : AbilityRoll.Normal) + InitMod;
+
+            int bonus = 0;
+            if (GiftOfAlacrity)
+                bonus += Dice.D8(1);
+
+            Initiative = Dice.MakeAbilityRoll(HasAdvantageOnInitiative ? AbilityRoll.Advantage : AbilityRoll.Normal) + InitMod + bonus;
             Stats.Encounters++;
+        }
+
+        public virtual void OnNewEncounter()
+        {
         }
 
         public bool NeedsHealing
@@ -133,15 +155,26 @@ namespace RegressionTest
             if (Abilities.ContainsKey(score))
             {
                 int roll = Dice.MakeAbilityRoll(rollType) + Abilities[score].Save;
-                if (HasBless)
-                    roll += Dice.D4();
 
-                if (ActiveEffect != null)
+                if (ActiveEffects.ContainsKey(SpellEffectType.UnsettlingWords))
                 {
-                    if (ActiveEffect.Type == SpellEffectType.SynapticStatic)
-                    {
-                        roll -= Dice.D6();
-                    }
+                    roll -= Dice.D8();
+                    ActiveEffects.Remove(SpellEffectType.UnsettlingWords);
+                }
+
+                if (ActiveEffects.ContainsKey(SpellEffectType.Bless))
+                {
+                    roll += Dice.D4();
+                }
+                
+                if (ActiveEffects.ContainsKey(SpellEffectType.Bane))
+                {
+                    roll -= Dice.D4();
+                }
+
+                if (ActiveEffects.ContainsKey(SpellEffectType.SynapticStatic))
+                {
+                    roll -= Dice.D6();
                 }
 
                 return roll >= dc;
@@ -170,9 +203,34 @@ namespace RegressionTest
             return result;
         }
 
-        public bool TakeDamage(int amount, BaseAction.ActionType actionType)
+        public virtual void PreHitCalc(int attackRoll, int modifier, bool potentiallyPowerful, bool criticalHit)
         {
-            amount = OnTakeDamage(amount, actionType);
+        }
+
+        public virtual bool ShouldUncannyDodge(int amount, BaseAction.ActionType actionType)
+        {
+            return false;
+        }
+
+        public virtual int CalculateResistences(int amount, BaseAction action)
+        {
+            if (action.Type == BaseAction.ActionType.MeleeAttack || action.Type == BaseAction.ActionType.RangedAttack)
+            {
+                if (ResistsNonmagical && action.IsMagical == false)
+                {
+                    amount = (int)Math.Floor((double)amount / 2.0f);
+                }
+            }
+
+            return amount;
+        }
+
+        public bool TakeDamage(int amount)
+        {
+            if (amount > 0 && Incapacitated)
+            {
+                Incapacitated = false;
+            }
 
             if (TempHitPoints > 0)
             {
@@ -220,6 +278,25 @@ namespace RegressionTest
             TempHitPoints = amount;
         }
 
+        public string GetNameDesc()
+        {
+            string nameDesc = Name;
+
+            if (Concentrating)
+                nameDesc += "*";
+
+            if (IsDodging)
+                nameDesc += " (dodging)";
+
+            if (IsHidden)
+                nameDesc += " (hidden)";
+
+            if (Incapacitated)
+                nameDesc += " (hypnotized)";
+
+            return nameDesc;
+        }
+
         public string GetHealthDesc()
         {
             if (Alive)
@@ -244,29 +321,30 @@ namespace RegressionTest
             UsedAction = false;
             UsedBonusAction = false;
             UsedReaction = false;
-            NewEnemy = false;
         }
 
         public virtual void OnNewTurn()
         {
+            HasShieldRunning = false;
         }
 
         public string OnEndTurn()
         {
             string output = string.Empty;
 
-            if (ActiveEffect != null)
+            /*foreach (KeyValuePair<SpellEffectType, SpellEffect> kvp in ActiveEffects)
             {
-                if (SavingThrow(ActiveEffect.Ability, ActiveEffect.DC))
+                SpellEffect effect = kvp.Value;
+                if (SavingThrow(effect.Ability, effect.DC))
                 {
-                    output = $"{Name} [{GetHealthDesc()}] made save against {ActiveEffect.Name}, effect ended.";
-                    ActiveEffect = null;
+                    output = $"{Name} [{GetHealthDesc()}] made save against {effect.Name}, effect ended.";
+                    ActiveEffects.Remove(kvp.Key);
                 }
                 else
                 {
-                    output = $"{Name} [{GetHealthDesc()}] failed save against {ActiveEffect.Name}, effect remains.";
+                    output = $"{Name} [{GetHealthDesc()}] failed save against {effect.Name}, effect remains.";
                 }
-            }
+            }*/
 
             return output;
         }
@@ -279,24 +357,7 @@ namespace RegressionTest
         public virtual void OnDeath()
         {
             Concentrating = false;
-        }
-
-        public virtual void OnBeforeHitCalc(int roll)
-        {
-        }
-
-        public virtual void OnAfterHitCalc()
-        {
-        }
-
-        public virtual int OnTakeDamage(int amount, BaseAction.ActionType actionType)
-        {
-            return amount;
-        }
-
-        public virtual void OnEnemyKilled()
-        {
-            NewEnemy = true;
+            HasShieldRunning = false;
         }
 
         public virtual BaseAction PickAction()
@@ -309,7 +370,7 @@ namespace RegressionTest
             return new NoAction { Time = BaseAction.ActionTime.BonusAction };
         }
 
-        public virtual BaseAction PickReaction()
+        public virtual BaseAction PickReaction(bool opportunityAttack)
         {
             return new NoAction { Time = BaseAction.ActionTime.Reaction };
         }

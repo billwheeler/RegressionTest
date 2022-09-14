@@ -8,13 +8,13 @@ namespace RegressionTest
 {
     public class Rogue : BaseCharacter
     {
-        public class Longsword : BaseAction
+        public class RevenantBlade : BaseAction
         {
             public Rogue parent { get; set; }
 
-            public Longsword()
+            public RevenantBlade()
             {
-                Desc = "Longsword";
+                Desc = "Revenant Blade";
                 Type = ActionType.MeleeAttack;
                 AttackModifier = 9;
                 Modifier = 5;
@@ -22,7 +22,7 @@ namespace RegressionTest
 
             public override int Amount()
             {
-                int damage = (Time == ActionTime.Action) ?
+                int damage = (Time != ActionTime.BonusAction) ?
                     Dice.D4(CriticalHit ? 4 : 2) : 
                     Dice.D4(CriticalHit ? 2 : 1);
 
@@ -36,88 +36,27 @@ namespace RegressionTest
             }
         }
 
-        public class Shortsword : BaseAction
-        {
-            public Rogue parent { get; set; }
-
-            public Shortsword()
-            {
-                Desc = "Shortsword";
-                Type = ActionType.MeleeAttack;
-                AttackModifier = 9;
-                Modifier = 5;
-            }
-
-            public override int Amount()
-            {
-                int damage = Dice.D6(CriticalHit ? 2 : 1);
-
-                if (!parent.DidSneakAttack)
-                {
-                    damage += Dice.D6(CriticalHit ? 10 : 5);
-                    parent.DidSneakAttack = true;
-                }
-
-                if (Time == ActionTime.Action)
-                {
-                    damage += Modifier;
-                }
-
-                return damage;
-            }
-        }
-
-        public class Dagger : BaseAction
-        {
-            public Rogue parent { get; set; }
-
-            public Dagger()
-            {
-                Desc = "Dagger";
-                Type = ActionType.MeleeAttack;
-                AttackModifier = 9;
-                Modifier = 5;
-            }
-
-            public override int Amount()
-            {
-                int damage = Dice.D4(CriticalHit ? 4 : 2);
-
-                if (!parent.DidSneakAttack)
-                {
-                    damage += Dice.D6(CriticalHit ? 10 : 5);
-                    parent.DidSneakAttack = true;
-                }
-
-                if (Time == ActionTime.Action)
-                {
-                    damage += Modifier;
-                }
-
-                return damage;
-            }
-        }
-
         public bool DidSneakAttack { get; set; }
 
         public Rogue()
         {
             Name = "Amxikas";
-            AC = 18;
-            InitMod = 7;
-            Health = 83;
-            MaxHealth = 83;
+            AC = 17;
+            InitMod = 5;
+            Health = 75;
+            MaxHealth = 75;
             HealingThreshold = 18;
             Group = Team.TeamOne;
             Healer = false;
             Priority = HealPriority.Medium;
             DidSneakAttack = false;
             MyType = CreatureType.PC;
+            OpportunityAttackChance = 60;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 0 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 20, Mod = 5, Save = 9 });
             Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 3 });
-            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 9, Mod = -1, Save = 3 });
+            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 8, Mod = -1, Save = 3 });
             Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 10, Mod = 0, Save = 0 });
             Abilities.Add(AbilityScore.Charisma, new Stat { Score = 14, Mod = 2, Save = 2 });
         }
@@ -134,9 +73,9 @@ namespace RegressionTest
             DidSneakAttack = false;
         }
 
-        public override int OnTakeDamage(int amount, BaseAction.ActionType actionType)
+        public override bool ShouldUncannyDodge(int amount, BaseAction.ActionType actionType)
         {
-            if (!UsedReaction && (actionType == BaseAction.ActionType.MeleeAttack || actionType == BaseAction.ActionType.RangedAttack))
+            if (!UsedReaction && (actionType == BaseAction.ActionType.MeleeAttack || actionType == BaseAction.ActionType.RangedAttack || actionType == BaseAction.ActionType.SpellAttack))
             {
                 bool shouldUseEvasion = false;
 
@@ -144,30 +83,51 @@ namespace RegressionTest
 
                 // if this would kill me, evade!
                 if (amount >= currentHP)
+                {
                     shouldUseEvasion = true;
+                }
 
                 // if this takes away half my health or more, evade!
-                if (amount >= (int)Math.Floor(currentHP / 2.0))
+                if (!shouldUseEvasion && amount >= (int)Math.Floor(currentHP / 2.0))
+                {
                     shouldUseEvasion = true;
+                }
+
+                // if it's above a threshold, evade!
+                if (!shouldUseEvasion && amount > 24)
+                {
+                    shouldUseEvasion = true;
+                }
+
+                // if we're low on health, always evade!
+                if (!shouldUseEvasion && currentHP <= (int)Math.Floor(MaxHealth / 3.0))
+                {
+                    shouldUseEvasion = true;
+                }
 
                 if (shouldUseEvasion)
                 {
-                    amount = (int)Math.Floor(amount / 2.0);
                     UsedReaction = true;
+                    return true;
                 }
             }
 
-            return base.OnTakeDamage(amount, actionType);
+            return false;
         }
 
         public override BaseAction PickAction()
         {
-            return new Longsword { Time = BaseAction.ActionTime.Action, parent = this };
+            return new RevenantBlade { Time = BaseAction.ActionTime.Action, parent = this };
         }
 
         public override BaseAction PickBonusAction()
         {
-            return new Longsword { Time = BaseAction.ActionTime.BonusAction, parent = this };
+            return new RevenantBlade { Time = BaseAction.ActionTime.BonusAction, parent = this };
+        }
+
+        public override BaseAction PickReaction(bool opportunityAttack)
+        {
+            return new RevenantBlade { Time = BaseAction.ActionTime.Reaction, parent = this };
         }
     }
 }

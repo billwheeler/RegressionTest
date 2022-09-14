@@ -16,6 +16,8 @@ namespace RegressionTest
         public int Encounters { get; set; } = 0;
         public int Deaths { get; set; } = 0;
         public int Healed { get; set; } = 0;
+        public int ConcentrationChecksTotal { get; set; } = 0;
+        public int ConcentrationChecksSuccess { get; set; } = 0;
 
         public float DPR
         {
@@ -46,6 +48,14 @@ namespace RegressionTest
             get
             {
                 return (float)Rounds / (float)Encounters;
+            }
+        }
+
+        public float Concentration
+        {
+            get
+            {
+                return (float)ConcentrationChecksSuccess / (float)ConcentrationChecksTotal * 100.0f;
             }
         }
     }

@@ -6,29 +6,38 @@ using System.Threading.Tasks;
 
 namespace RegressionTest
 {
-    public class Ranger : BaseCharacter
+    public class Marinyth : BaseCharacter
     {
+        public bool ShouldHuntersMark { get; set; } = true;
         public bool HuntersMarkRunning { get; set; }
-        public bool PlanarWarriorUsed { get; set; }
+        public bool FirstRound { get; set; }
+        public bool UsedFlurry { get; set; }
+        public bool CanFlurry { get; set; }
 
         public class Longbow : BaseAction
         {
-            public Ranger parent { get; set; }
+            public Marinyth parent { get; set; }
 
             private string _desc = "Longbow";
-            private bool _planarThisTurn = false;
             private bool _ssThisTurn = false;
+            private readonly bool SharpshooterEnabled = true;
 
             public override void PreHit(BaseCharacter attacker, BaseCharacter target)
             {
                 base.PreHit(attacker, target);
-                return;
-                double percentage = Util.Remap(target.AC, 14, 19, 100, 0);
 
-                if (Dice.D100() < percentage)
+                if (SharpshooterEnabled)
                 {
-                    _ssThisTurn = true;
-                    AttackModifier = 6;
+                    if (ShouldPowerAttack(target.AC, 14, 19))
+                    {
+                        _ssThisTurn = true;
+                        AttackModifier = 6;
+                    }
+                    else
+                    {
+                        _ssThisTurn = false;
+                        AttackModifier = 11;
+                    }
                 }
                 else
                 {
@@ -36,8 +45,9 @@ namespace RegressionTest
                     AttackModifier = 11;
                 }
             }
-            
-            public override string Desc { 
+
+            public override string Desc
+            {
                 get
                 {
                     string output = _desc;
@@ -45,14 +55,11 @@ namespace RegressionTest
                     if (_ssThisTurn)
                         output += " (SS)";
 
-                    if (_planarThisTurn)
-                        output += " (PW)";
-
                     if (parent.HuntersMarkRunning)
                         output += " (HM)";
 
                     return output;
-                } 
+                }
                 set { _desc = value; }
             }
 
@@ -63,50 +70,43 @@ namespace RegressionTest
                 AttackModifier = 11;
                 Modifier = 5;
                 TotalToRun = 2;
+                IsMagical = true;
+            }
+
+            public override bool Hits(BaseCharacter attacker, BaseCharacter target)
+            {
+                bool result = base.Hits(attacker, target);
+
+                if (parent.CanFlurry)
+                {
+                    if (!result && !parent.UsedFlurry)
+                    {
+                        TotalToRun += 1;
+                        parent.UsedFlurry = true;
+                    }
+                }
+
+                return result;
             }
 
             public override int Amount()
             {
                 int damage = Dice.D8(CriticalHit ? 2 : 1);
 
+                if (CurrentRunning == 3)
+                    damage += Dice.D8(CriticalHit ? 2 : 1);
+
                 if (parent.HuntersMarkRunning)
                 {
                     damage += Dice.D6(CriticalHit ? 2 : 1);
                 }
 
-                if (!parent.PlanarWarriorUsed)
-                {
-                    damage += Dice.D8(CriticalHit ? 2 : 1);
-                    _planarThisTurn = true;
-                    parent.PlanarWarriorUsed = true;
-                }
-                else
-                {
-                    _planarThisTurn = false;
-                }
-
                 if (_ssThisTurn)
                 {
                     damage += 10;
-                    _ssThisTurn = false;
                 }
 
                 return damage + Modifier;
-            }
-        }
-
-        public class PlanarWarriorActivate : BaseAction
-        {
-            public PlanarWarriorActivate()
-            {
-                Desc = "Planar Warrior";
-                Type = ActionType.Activate;
-                Time = ActionTime.BonusAction;
-            }
-
-            public override int Amount()
-            {
-                return 0;
             }
         }
 
@@ -125,11 +125,11 @@ namespace RegressionTest
             }
         }
 
-        public Ranger()
+        public Marinyth()
         {
             Name = "Marinyth";
             AC = 17;
-            InitMod = 5 + 4;
+            InitMod = 8;
             Health = 76;
             MaxHealth = 76;
             HealingThreshold = 18;
@@ -137,33 +137,44 @@ namespace RegressionTest
             Priority = HealPriority.Medium;
             MyType = CreatureType.PC;
             BonusActionFirst = false;
-
-            PlanarWarriorUsed = false;
+            UsedFlurry = false;
             HuntersMarkRunning = false;
+            CanFlurry = false;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 4 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 20, Mod = 5, Save = 9 });
-            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 14, Mod = 2, Save = 6 });
+            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 14, Mod = 2, Save = 3 });
             Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 12, Mod = 1, Save = 1 });
-            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 16, Mod = 3, Save = 3 });
-            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 8, Mod = -1, Save = -1 });
+            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 16, Mod = 3, Save = 7 });
+            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 9, Mod = -1, Save = -1 });
         }
 
         public override void Init()
         {
             base.Init();
-            PlanarWarriorUsed = false;
+
             HuntersMarkRunning = false;
+            FirstRound = true;
+            IsHidden = false;
+            UsedFlurry = false;
         }
 
         public override BaseAction PickAction()
         {
-            return new Longbow { Time = BaseAction.ActionTime.Action, parent = this };
+            int total = FirstRound ? 3 : 2;
+            FirstRound = false;
+
+            AbilityRoll rollType = AbilityRoll.Normal;
+
+            if (IsHidden)
+                rollType = AbilityRoll.Advantage;
+
+            return new Longbow { Time = BaseAction.ActionTime.Action, parent = this, TotalToRun = total, RollType = rollType };
         }
 
         public override BaseAction PickBonusAction()
         {
-            if (!HuntersMarkRunning)
+            if (ShouldHuntersMark && !HuntersMarkRunning)
             {
                 HuntersMarkRunning = true;
                 Concentrating = true;
@@ -173,18 +184,12 @@ namespace RegressionTest
             return new NoAction { Time = BaseAction.ActionTime.BonusAction };
         }
 
-        public override void OnNewRound()
-        {
-            base.OnNewRound();
-
-            PlanarWarriorUsed = false;
-        }
-
         public override void OnNewTurn()
         {
             base.OnNewTurn();
+            UsedFlurry = false;
 
-            if (!HuntersMarkRunning)
+            if (ShouldHuntersMark && !HuntersMarkRunning)
             {
                 BonusActionFirst = true;
             }
@@ -192,6 +197,8 @@ namespace RegressionTest
             {
                 BonusActionFirst = false;
             }
+
+            IsHidden = Dice.D100() <= (FirstRound ? 20 : 2);
         }
 
         public override void OnFailConcentration()
