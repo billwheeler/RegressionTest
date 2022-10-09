@@ -24,6 +24,7 @@ namespace RegressionTest
                 Type = ActionType.MeleeAttack;
                 AttackModifier = 9;
                 Modifier = 5;
+                IsMagical = true;
             }
 
             public override int Amount()
@@ -42,6 +43,7 @@ namespace RegressionTest
                 Type = ActionType.MeleeAttack;
                 AttackModifier = 9;
                 Modifier = 5;
+                IsMagical = true;
             }
 
             public override int Amount()
@@ -98,7 +100,7 @@ namespace RegressionTest
             }
         }
 
-        public EldritchKnight()
+        public EldritchKnight() : base()
         {
             Name = "Amxikas";
             AC = 17;
@@ -161,7 +163,7 @@ namespace RegressionTest
                 return new ShadowBladeActivate();
             }
 
-            if (Health <= HealingThreshold)
+            if (!UsedSecondWind && Health <= HealingThreshold)
             {
                 UsedSecondWind = true;
                 int amount = Dice.D10() + 10;

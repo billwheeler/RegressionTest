@@ -125,7 +125,7 @@ namespace RegressionTest
         public bool DivineFavorRunning { get; set; } = false;
         public int LayOnHandsPool { get; set; } = 50;
 
-        public Tenraja()
+        public Tenraja() : base()
         {
             Name = "Tenraja";
             AC = 18;
@@ -181,10 +181,11 @@ namespace RegressionTest
             return new NoAction { Time = BaseAction.ActionTime.BonusAction };
         }
 
-        public override void OnNewRound()
+        public override bool OnNewRound()
         {
-            base.OnNewRound();
+            bool result = base.OnNewRound();
             CanBonusActionAttack = false;
+            return result;
         }
 
         public override void OnNewTurn()

@@ -26,7 +26,7 @@ namespace RegressionTest
             }
         }
 
-        public Satyr()
+        public Satyr() : base()
         {
             Name = "Erven";
             AC = 14;
@@ -34,7 +34,7 @@ namespace RegressionTest
             MaxHealth = 31;
             HealingThreshold = 12;
             Group = Team.TeamOne;
-            Priority = HealPriority.Low;
+            Priority = HealPriority.Dont;
             InitMod = 3;
             MyType = CreatureType.Summon;
 

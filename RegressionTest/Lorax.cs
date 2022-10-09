@@ -57,7 +57,7 @@ namespace RegressionTest
 
         public int SuperiorityDice { get; set; } = 5;
 
-        public Lorax()
+        public Lorax() : base()
         {
             Name = "Lorax";
             AC = 17;

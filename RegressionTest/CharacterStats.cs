@@ -18,6 +18,9 @@ namespace RegressionTest
         public int Healed { get; set; } = 0;
         public int ConcentrationChecksTotal { get; set; } = 0;
         public int ConcentrationChecksSuccess { get; set; } = 0;
+        public int Smites { get; set; } = 0;
+        public int OpportunityAttacks { get; set; } = 0;
+        public int PowerAttacks { get; set; } = 0;
 
         public float DPR
         {
@@ -56,6 +59,30 @@ namespace RegressionTest
             get
             {
                 return (float)ConcentrationChecksSuccess / (float)ConcentrationChecksTotal * 100.0f;
+            }
+        }
+
+        public float SmitesPerEncounter
+        {
+            get
+            {
+                return (float)Smites / (float)Encounters;
+            }
+        }
+
+        public float OpportunityAttacksPerEncounter
+        {
+            get
+            {
+                return (float)OpportunityAttacks / (float)Encounters;
+            }
+        }
+
+        public float PowerAttacksPercentage
+        {
+            get
+            {
+                return (float)PowerAttacks / (float)Attacks * 100.0f;
             }
         }
     }

@@ -26,7 +26,7 @@ namespace RegressionTest
             }
         }
 
-        public EarthElemental()
+        public EarthElemental() : base()
         {
             Name = "Elly";
             AC = 17;

@@ -109,7 +109,7 @@ namespace RegressionTest
             }
         }
 
-        public Sulyman()
+        public Sulyman() : base()
         {
             Name = "Sulyman";
             AC = 16;

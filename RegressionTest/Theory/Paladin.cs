@@ -15,6 +15,7 @@ namespace RegressionTest
                 Desc = "Warhammer";
                 AttackModifier = 9;
                 Modifier = 7;
+                IsMagical = true;
             }
 
             public override int Amount()
@@ -32,6 +33,7 @@ namespace RegressionTest
                 Desc = "Shield Bash";
                 AttackModifier = 9;
                 Modifier = 5;
+                IsMagical = true;
             }
 
             public override int Amount()
@@ -104,6 +106,7 @@ namespace RegressionTest
                     // divine smite
                     if (Dice.D100() <= percentToSmite)
                     {
+                        parent.Stats.Smites++;
                         _smitedThisTurn = true;
                         damage += Dice.D8(DiceNumberForSmite(CriticalHit));
                     }
@@ -175,7 +178,7 @@ namespace RegressionTest
         public bool ShouldUseSmites { get; set; } = false;
         public int LayOnHandsPool { get; set; } = 45;
 
-        public Paladin()
+        public Paladin() : base()
         {
             Name = "Murie";
             AC = 20;
@@ -186,10 +189,11 @@ namespace RegressionTest
             Healer = false;
             Priority = HealPriority.Medium;
             InitMod = 4;
-            WarCaster = false;
+            WarCaster = true;
             MyType = CreatureType.PC;
             ShouldUseSmites = true;
             CanSpiritShroud = true;
+            OpportunityAttackChance = 10;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 20, Mod = 5, Save = 8 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 10, Mod = 0, Save = 3 });
@@ -228,13 +232,15 @@ namespace RegressionTest
 
         public override BaseAction PickReaction(bool opportunityAttack)
         {
+            Stats.OpportunityAttacks++;
             return new Warhammer { Time = BaseAction.ActionTime.Reaction, TotalToRun = 1, parent = this };
         }
 
-        public override void OnNewRound()
+        public override bool OnNewRound()
         {
-            base.OnNewRound();
+            bool result = base.OnNewRound();
             CanBonusActionAttack = false;
+            return result;
         }
 
         public override void OnNewTurn()

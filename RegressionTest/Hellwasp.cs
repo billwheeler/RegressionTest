@@ -48,7 +48,7 @@ namespace RegressionTest
             }
         }
 
-        public Hellwasp()
+        public Hellwasp() : base()
         {
             Name = "Hellwasp";
             AC = 19;

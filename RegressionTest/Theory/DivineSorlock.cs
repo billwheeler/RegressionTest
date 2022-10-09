@@ -84,7 +84,7 @@ namespace RegressionTest
             }
         }
 
-        public DivineSorlock()
+        public DivineSorlock() : base()
         {
             Name = "Ammareth";
             AC = 19;

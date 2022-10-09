@@ -73,9 +73,9 @@
     <Compile Include="Theory\DivineSorlock.cs" />
     <Compile Include="Theory\Druid.cs" />
     <Compile Include="Theory\EldritchKnight.cs" />
+    <Compile Include="Theory\Elemental.cs" />
     <Compile Include="Theory\GenieWarlock.cs" />
     <Compile Include="Theory\Fighter.cs" />
-    <Compile Include="Theory\LawCleric.cs" />
     <Compile Include="Theory\Marinyth.cs" />
     <Compile Include="Theory\Murie.cs" />
     <Compile Include="Theory\NerfedTwilight.cs" />
@@ -84,6 +84,7 @@
     <Compile Include="Theory\Ranger.cs" />
     <Compile Include="Theory\Rogue.cs" />
     <Compile Include="Theory\Satyr.cs" />
+    <Compile Include="Theory\Sorcerer.cs" />
     <Compile Include="Theory\Wildfire.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="Wight.cs" />

@@ -82,7 +82,7 @@ namespace RegressionTest
         public bool CanSynapticStatic { get; set; } = true;
         public bool CastedLeveledSpell { get; set; } = false;
 
-        public Fionula()
+        public Fionula() : base()
         {
             Name = "Fionula";
             AC = 18;
@@ -112,11 +112,13 @@ namespace RegressionTest
             CastedLeveledSpell = false;
         }
 
-        public override void OnNewRound()
+        public override bool OnNewRound()
         {
-            base.OnNewRound();
+            bool result = base.OnNewRound();
 
             CastedLeveledSpell = false;
+
+            return result;
         }
 
         public override BaseAction PickAction()

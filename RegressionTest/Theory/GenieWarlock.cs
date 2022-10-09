@@ -41,11 +41,11 @@ namespace RegressionTest
         public bool HypnoticPatternRunning { get; set; } = false;
         public bool DidExtraDamage { get; set; } = false;
 
-        public GenieWarlock()
+        public GenieWarlock() : base()
         {
             //Name = "Ketrick";
-            //Name = "Torren";
-            Name = "Tolson";
+            Name = "Lakrissa";
+            //Name = "Tolson";
             AC = 18;
             InitMod = 2;
             Health = 75;
@@ -73,11 +73,13 @@ namespace RegressionTest
             DidBigSpell = false;
         }
 
-        public override void OnNewRound()
+        public override bool OnNewRound()
         {
-            base.OnNewRound();
+            bool result = base.OnNewRound();
 
             DidExtraDamage = false;
+
+            return result;
         }
 
         public override BaseAction PickAction()
@@ -93,7 +95,7 @@ namespace RegressionTest
                 }
                 else
                 {
-                    DidBigSpell = true;
+                    //DidBigSpell = true;
                     return new SynapticStatic(17);
                 }
             }

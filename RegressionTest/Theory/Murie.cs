@@ -30,7 +30,7 @@ namespace RegressionTest
 
         public class Warhammer : BaseAction
         {
-            public readonly bool CanUseBoomingBlade = true;
+            public readonly bool CanUseBoomingBlade = false;
 
             public Murie parent { get; set; }
 
@@ -39,8 +39,8 @@ namespace RegressionTest
                 Desc = "Warhammer";
                 Type = ActionType.MeleeAttack;
                 Time = ActionTime.Action;
-                AttackModifier = 6;
-                Modifier = 2;
+                AttackModifier = 7;
+                Modifier = 3;
                 IsMagical = true;
             }
 
@@ -154,7 +154,7 @@ namespace RegressionTest
             }
         }
 
-        public Murie()
+        public Murie() : base()
         {
             Name = "Murie";
             AC = 22;
@@ -169,7 +169,7 @@ namespace RegressionTest
             SpiritGuardiansRunning = false;
             WarCaster = true;
             MyType = CreatureType.PC;
-            OpportunityAttackChance = 10;
+            OpportunityAttackChance = 20;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 16, Mod = 3, Save = 3 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 8, Mod = -1, Save = -1 });
@@ -199,9 +199,9 @@ namespace RegressionTest
             {
                 return new TollOfTheDead();
             }
-            else if (rando < 90 && rando >= 30)
+            else if (rando < 90 && rando >= 40)
             {
-                return new Mace { parent = this };
+                return new Mace { Time = BaseAction.ActionTime.Action, TotalToRun = 1, parent = this };
             }
 
             IsDodging = true;
@@ -212,7 +212,7 @@ namespace RegressionTest
         {
             if (Healer && HealTarget != null)
             {
-                return new HealingWord { Modifier = 5, Level = SpellAction.SpellLevel.Three };
+                return new HealingWord { Modifier = 4, Level = SpellAction.SpellLevel.One };
             }
 
             if (Dice.D100() <= 90)
@@ -225,6 +225,8 @@ namespace RegressionTest
 
         public override BaseAction PickReaction(bool opportunityAttack)
         {
+            Stats.OpportunityAttacks++;
+
             return new Mace { Time = BaseAction.ActionTime.Reaction, TotalToRun = 1, parent = this };
         }
 

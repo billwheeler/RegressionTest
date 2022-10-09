@@ -91,18 +91,21 @@ namespace RegressionTest
                     Result = hits ? DamageAmount.Full : DamageAmount.None;
                     break;
 
+                case ActionType.Apply:
+                    hits = true;
+                    if (EffectToApply != null)
+                    {
+                        target.ApplyEffect(EffectToApply);
+                    }
+
+                    Result = DamageAmount.None;
+                    break;
+
                 case ActionType.SpellSave:
                     hits = !target.SavingThrow(Ability, DC);
                     if (hits && EffectToApply != null)
                     {
-                        if (EffectToApply.Type == SpellEffectType.HypnoticPattern)
-                        {
-                            target.Incapacitated = true;
-                        }
-                        else
-                        {
-                            target.ActiveEffects.Add(EffectToApply.Type, EffectToApply);
-                        }
+                        target.ApplyEffect(EffectToApply);
                     }
 
                     if (HalfDamageOnMiss)
@@ -184,6 +187,13 @@ namespace RegressionTest
             if (attacker.ActiveEffects.ContainsKey(SpellEffectType.SynapticStatic))
             {
                 roll -= Dice.D6();
+            }
+
+            if (attacker.ActiveEffects[SpellEffectType.Inspired].Active)
+            {
+                roll += Dice.D8();
+                attacker.ActiveEffects[SpellEffectType.Inspired].Active = false;
+                attacker.ActiveEffects[SpellEffectType.Inspired].DC = 0;
             }
 
             if (attacker.DebugOutput)
@@ -407,6 +417,26 @@ namespace RegressionTest
         }
     }
 
+    public class ScorchingRay : BaseAction
+    {
+        public ScorchingRay(int attackMod = 0)
+        {
+            Desc = "Scorching Ray";
+            Type = ActionType.SpellAttack;
+            Time = ActionTime.Action;
+            AttackModifier = attackMod;
+            Modifier = 0;
+            TotalToRun = 3;
+            IsMagical = true;
+        }
+
+        public override int Amount()
+        {
+            int damage = Dice.D6(CriticalHit ? 4 : 2);
+            return damage + Modifier;
+        }
+    }
+
     public class HypnoticPattern : BaseAction
     {
         public HypnoticPattern(int dc = 17)
@@ -427,6 +457,34 @@ namespace RegressionTest
                 Name = "Hypnotic Pattern",
                 Type = SpellEffectType.HypnoticPattern
             };
+        }
+    }
+
+    public class BlackTentacles : BaseAction
+    {
+        public BlackTentacles(int dc = 17)
+        {
+            Desc = "Black Tentacles";
+            Type = ActionType.SpellSave;
+            Time = ActionTime.Action;
+            Ability = AbilityScore.Dexterity;
+            Damageless = false;
+            MinTargets = 2;
+            MaxTargets = 6;
+            DC = dc;
+
+            EffectToApply = new SpellEffect
+            {
+                Ability = AbilityScore.Wisdom,
+                DC = dc,
+                Name = "Black Tentacles",
+                Type = SpellEffectType.BlackTentacles
+            };
+        }
+
+        public override int Amount()
+        {
+            return Dice.D6(3);
         }
     }
 }

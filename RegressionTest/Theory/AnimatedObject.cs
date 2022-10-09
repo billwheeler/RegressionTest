@@ -24,7 +24,7 @@ namespace RegressionTest
             }
         }
 
-        public AnimatedObject()
+        public AnimatedObject() : base()
         {
             Name = "Animated Object (Tiny)";
             AC = 18;

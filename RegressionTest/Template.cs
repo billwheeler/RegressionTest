@@ -23,7 +23,7 @@ namespace RegressionTest
             }
         }
 
-        public Template()
+        public Template() : base()
         {
             Name = "Mr Template";
             AC = 13;

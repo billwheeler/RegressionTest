@@ -49,7 +49,7 @@ namespace RegressionTest
             }
         }
 
-        public Malbraxys()
+        public Malbraxys() : base()
         {
             Name = "Malbraxys";
             AC = 20;

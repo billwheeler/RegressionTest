@@ -37,7 +37,7 @@ namespace RegressionTest
 
             public override int Amount()
             {
-                return Dice.D12(4);
+                return Dice.D12(6);
             }
         }
 
@@ -53,17 +53,17 @@ namespace RegressionTest
 
             public override int Amount()
             {
-                return Dice.D6(4);
+                return Dice.D6(6);
             }
         }
 
-        public Nightwalker()
+        public Nightwalker() : base()
         {
             Name = "Nightwalker";
             AC = 14;
             InitMod = 4;
-            Health = 297;
-            MaxHealth = 297;
+            Health = 337;
+            MaxHealth = 337;
             Group = Team.TeamTwo;
             PreTurnNotify = true;
             HighValueTarget = true;
@@ -93,16 +93,41 @@ namespace RegressionTest
 
         public override BaseAction PickPreTurn(BaseCharacter target)
         {
-            if (!Incapacitated)
+            if (Alive && Dice.D100() <= GetAnnihilatingAuraChance())
             {
-                // we'll say that only 67% of the time an enemy is in range
-                if (Alive && Dice.D100() <= 67)
-                {
-                    return new AnnihilatingAura();
-                }
+                return new AnnihilatingAura();
             }
 
             return new NoAction();
+        }
+
+        private int GetAnnihilatingAuraChance()
+        {
+            switch (Context.GetLivingEnemyCount(Group, false))
+            {
+                case 1:
+                    return 70;
+                case 2:
+                    return 63;
+                case 3:
+                    return 56;
+                case 4:
+                    return 49;
+                case 5:
+                    return 42;
+                case 6:
+                    return 35;
+                case 7:
+                    return 28;
+                case 8:
+                    return 21;
+                case 9:
+                    return 14;
+                case 10:
+                    return 7;
+                default:
+                    return 3;
+            }
         }
     }
 }

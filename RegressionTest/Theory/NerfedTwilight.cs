@@ -21,7 +21,7 @@ namespace RegressionTest
                 Type = ActionType.SpellSave;
                 Time = ActionTime.Action;
                 Ability = AbilityScore.Wisdom;
-                DC = 17;
+                DC = 16;
             }
 
             public override int Amount()
@@ -70,8 +70,8 @@ namespace RegressionTest
                 Desc = "Spiritual Weapon";
                 Type = ActionType.SpellAttack;
                 Time = ActionTime.BonusAction;
-                AttackModifier = 9;
-                Modifier = 5;
+                AttackModifier = 8;
+                Modifier = 4;
             }
 
             public override int Amount()
@@ -104,7 +104,7 @@ namespace RegressionTest
                 Time = ActionTime.PreTurn;
                 HalfDamageOnMiss = true;
                 Ability = AbilityScore.Wisdom;
-                DC = 17;
+                DC = 16;
             }
 
             public override int Amount()
@@ -134,13 +134,13 @@ namespace RegressionTest
             }
         }
 
-        public NerfedTwilight()
+        public NerfedTwilight() : base()
         {
             Name = "Leonid";
             AC = 20;
             InitMod = -1;
-            Health = 83;
-            MaxHealth = 83;
+            Health = 75;
+            MaxHealth = 75;
             Group = Team.TeamOne;
             Healer = true;
             HealingThreshold = 18;
@@ -149,16 +149,16 @@ namespace RegressionTest
             PostTurnNotify = true;
             TwilightSanctuaryRunning = false;
             SpiritGuardiansRunning = false;
-            WarCaster = false;
+            WarCaster = true;
             HasAdvantageOnInitiative = true;
             MyType = CreatureType.PC;
-            OpportunityAttackChance = 2;
+            OpportunityAttackChance = 10;
 
-            Abilities.Add(AbilityScore.Strength, new Stat { Score = 16, Mod = 3, Save = 3 });
+            Abilities.Add(AbilityScore.Strength, new Stat { Score = 15, Mod = 2, Save = 2 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 8, Mod = -1, Save = -1 });
             Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 7 });
             Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 10, Mod = 0, Save = 0 });
-            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 20, Mod = 5, Save = 9 });
+            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 18, Mod = 4, Save = 8 });
             Abilities.Add(AbilityScore.Charisma, new Stat { Score = 10, Mod = 0, Save = 4 });
         }
 
@@ -203,7 +203,7 @@ namespace RegressionTest
                 {
                     return new TollOfTheDead();
                 }
-                else if (rando <= 10)
+                else if (rando <= 35)
                 {
                     return new Warhammer { parent = this };
                 }
@@ -217,7 +217,7 @@ namespace RegressionTest
         {
             if (Healer && HealTarget != null)
             {
-                return new HealingWord { Modifier = 5, Level = SpellAction.SpellLevel.Three };
+                return new HealingWord { Modifier = 4, Level = SpellAction.SpellLevel.One };
             }
 
             if (Dice.D100() <= 90)
@@ -230,22 +230,52 @@ namespace RegressionTest
 
         public override BaseAction PickReaction(bool opportunityAttack)
         {
+            Stats.OpportunityAttacks++;
+
             return new Warhammer { Time = BaseAction.ActionTime.Reaction, parent = this };
         }
 
         public override BaseAction PickPreTurn(BaseCharacter target)
         {
-            if (SpiritGuardiansRunning)
+            if (!target.Incapacitated)
             {
-                if (target.HighValueTarget)
-                    return new SpiritGuardiansPreTurn();
-
-                // we'll say that only 40% of the time an enemy is in range
-                if (Dice.D100() <= 40)
-                    return new SpiritGuardiansPreTurn();
+                if (SpiritGuardiansRunning)
+                {
+                    if (Dice.D100() <= GetSpiritGuardiansChance())
+                        return new SpiritGuardiansPreTurn();
+                }
             }
 
             return new NoAction();
+        }
+
+        private int GetSpiritGuardiansChance()
+        {
+            switch (Context.GetLivingEnemyCount(Group, false))
+            {
+                case 1:
+                    return 70;
+                case 2:
+                    return 63;
+                case 3:
+                    return 56;
+                case 4:
+                    return 49;
+                case 5:
+                    return 42;
+                case 6:
+                    return 35;
+                case 7:
+                    return 28;
+                case 8:
+                    return 21;
+                case 9:
+                    return 14;
+                case 10:
+                    return 7;
+                default:
+                    return 3;
+            }
         }
 
         public override void OnFailConcentration()

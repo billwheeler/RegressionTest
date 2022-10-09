@@ -12,12 +12,30 @@ namespace RegressionTest
         {
             public Rogue parent { get; set; }
 
+            private string _desc = "Longbow";
+            private bool _saThisTurn = false;
+
             public RevenantBlade()
             {
                 Desc = "Revenant Blade";
                 Type = ActionType.MeleeAttack;
                 AttackModifier = 9;
                 Modifier = 5;
+                IsMagical = true;
+            }
+
+            public override string Desc
+            {
+                get
+                {
+                    string output = _desc;
+
+                    if (_saThisTurn)
+                        output += " (SA)";
+
+                    return output;
+                }
+                set { _desc = value; }
             }
 
             public override int Amount()
@@ -29,6 +47,7 @@ namespace RegressionTest
                 if (!parent.DidSneakAttack)
                 {
                     damage += Dice.D6(CriticalHit ? 10 : 5);
+                    _saThisTurn = true;
                     parent.DidSneakAttack = true;
                 }
 
@@ -38,11 +57,11 @@ namespace RegressionTest
 
         public bool DidSneakAttack { get; set; }
 
-        public Rogue()
+        public Rogue() : base()
         {
             Name = "Amxikas";
             AC = 17;
-            InitMod = 5;
+            InitMod = 7 + 4;
             Health = 75;
             MaxHealth = 75;
             HealingThreshold = 18;
@@ -127,6 +146,7 @@ namespace RegressionTest
 
         public override BaseAction PickReaction(bool opportunityAttack)
         {
+            Stats.OpportunityAttacks++;
             return new RevenantBlade { Time = BaseAction.ActionTime.Reaction, parent = this };
         }
     }

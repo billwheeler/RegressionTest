@@ -29,9 +29,36 @@ namespace RegressionTest
             public int Compare(BaseCharacter a, BaseCharacter b)
             {
                 if (a.Initiative < b.Initiative)
+                {
                     return 1;
+                }
                 else if (a.Initiative > b.Initiative)
+                {
                     return -1;
+                }
+                else
+                {
+                    if (a.MyType == CreatureType.Summon && (b.MyType == CreatureType.PC || b.MyType == CreatureType.NPC))
+                    {
+                        return 1;
+                    }
+                    else if ((a.MyType == CreatureType.PC || a.MyType == CreatureType.NPC) && b.MyType == CreatureType.Summon)
+                    {
+                        return -1;
+                    }
+                    else
+                    {
+                        if (a.Abilities[AbilityScore.Dexterity].Save < b.Abilities[AbilityScore.Dexterity].Save)
+                        {
+                            return 1;
+                        }
+                        else if (a.Abilities[AbilityScore.Dexterity].Save > b.Abilities[AbilityScore.Dexterity].Save)
+                        {
+                            return -1;
+                        }
+                    }
+                }
+
                 return 0;
             }
         }
@@ -108,6 +135,27 @@ namespace RegressionTest
                 if (Characters[i].Incapacitated)
                 {
                     count++;
+                    Characters[i].ActiveEffects[SpellEffectType.HypnoticPattern].Active = false;
+                    Characters[i].Incapacitated = false;
+                }
+            }
+        }
+
+        public void EndBlackTentacles(Team group)
+        {
+            int count = 0;
+            for (int i = 0; i < Characters.Count; i++)
+            {
+                if (Characters[i].Group == group)
+                    continue;
+
+                if (!Characters[i].Alive)
+                    continue;
+
+                if (Characters[i].Incapacitated)
+                {
+                    count++;
+                    Characters[i].ActiveEffects[SpellEffectType.BlackTentacles].Active = false;
                     Characters[i].Incapacitated = false;
                 }
             }
@@ -150,7 +198,7 @@ namespace RegressionTest
                 if (Characters[i].MyType == CreatureType.Summon && !Characters[i].BeenSummoned)
                     continue;
 
-                if (Characters[i].ActiveEffects.ContainsKey(type))
+                if (Characters[i].ActiveEffects[type].Active)
                     return true;
             }
 
@@ -262,6 +310,9 @@ namespace RegressionTest
             {
                 if (Characters[i].Group != group && Characters[i].Alive)
                 {
+                    if (Characters[i].MyType == CreatureType.Summon && !Characters[i].BeenSummoned)
+                        continue;
+
                     int weight = 5000;
                     if (Characters[i].HighValueTarget)
                     {
@@ -337,6 +388,26 @@ namespace RegressionTest
             }
 
             return -1;
+        }
+
+        public BaseCharacter PickRandomTeammate(Team group, int exclude)
+        {
+            List<int> candidates = new List<int>();
+
+            for (int i = 0; i < Characters.Count; i++)
+            {
+                if (Characters[i].Group == group && Characters[i].Alive && Characters[i].ID != exclude)
+                {
+                    candidates.Add(i);
+                }
+            }
+
+            if (candidates.Count > 0)
+            {
+                return Characters[candidates[Dice.JustRandom(0, candidates.Count - 1)]];
+            }
+
+            return null;
         }
 
         public bool ProcessAction(BaseAction action, int me, int target = -1)
@@ -643,25 +714,27 @@ namespace RegressionTest
                 }
 
                 Characters[me].Stats.Rounds++;
-                Characters[me].OnNewRound();
+                if (!Characters[me].OnNewRound())
+                {
+                    continue;
+                }
 
                 if (Characters[me].OpportunityAttackChance > 0)
                 {
                     OpportunityAttackers.Add(me);
                 }
 
-                if (Characters[me].Incapacitated)
+                if (!Characters[me].Incapacitated)
                 {
-                    continue;
-                }
 
-                // are we a healer? does anyone need it?
-                if (AllowHealing && Characters[me].Healer)
-                {
-                    int target = PickHealTarget(Characters[me].Group);
-                    if (target > -1)
+                    // are we a healer? does anyone need it?
+                    if (AllowHealing && Characters[me].Healer)
                     {
-                        Characters[me].HealTarget = Characters[target];
+                        int target = PickHealTarget(Characters[me].Group);
+                        if (target > -1)
+                        {
+                            Characters[me].HealTarget = Characters[target];
+                        }
                     }
                 }
 
@@ -669,6 +742,12 @@ namespace RegressionTest
 
                 foreach (int id in PreTurnChars)
                 {
+                    if (!Characters[me].Alive)
+                        continue;
+
+                    if (Characters[me].MyType == CreatureType.Summon && !Characters[me].BeenSummoned)
+                        continue;
+
                     int idx = GetIndexByID(id);
                     BaseAction preAction = Characters[idx].PickPreTurn(Characters[me]);
                     if (!ProcessAction(preAction, idx, me))
@@ -685,64 +764,68 @@ namespace RegressionTest
                     continue;
                 }
 
-                if (Characters[me].BonusActionFirst)
+                if (!Characters[me].Incapacitated)
                 {
-                    // pick bonus action
-                    BaseAction bonusAction = Characters[me].PickBonusAction();
-                    if (bonusAction.Type != BaseAction.ActionType.None)
-                    {
-                        Characters[me].UsedBonusAction = true;
-                    }
 
-                    if (!ProcessAction(bonusAction, me))
+                    if (Characters[me].BonusActionFirst)
                     {
-                        if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
-                        result = false;
-                        break;
-                    }
+                        // pick bonus action
+                        BaseAction bonusAction = Characters[me].PickBonusAction();
+                        if (bonusAction.Type != BaseAction.ActionType.None)
+                        {
+                            Characters[me].UsedBonusAction = true;
+                        }
 
-                    // pick action
-                    BaseAction mainAction = Characters[me].PickAction();
-                    if (mainAction.Type != BaseAction.ActionType.None)
-                    {
-                        Characters[me].UsedAction = true;
-                    }
+                        if (!ProcessAction(bonusAction, me))
+                        {
+                            if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
+                            result = false;
+                            break;
+                        }
 
-                    if (!ProcessAction(mainAction, me))
-                    {
-                        if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
-                        result = false;
-                        break;
-                    }
-                }
-                else
-                {
-                    // pick action
-                    BaseAction mainAction = Characters[me].PickAction();
-                    if (mainAction.Type != BaseAction.ActionType.None)
-                    {
-                        Characters[me].UsedAction = true;
-                    }
+                        // pick action
+                        BaseAction mainAction = Characters[me].PickAction();
+                        if (mainAction.Type != BaseAction.ActionType.None)
+                        {
+                            Characters[me].UsedAction = true;
+                        }
 
-                    if (!ProcessAction(mainAction, me))
-                    {
-                        if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
-                        result = false;
-                        break;
+                        if (!ProcessAction(mainAction, me))
+                        {
+                            if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
+                            result = false;
+                            break;
+                        }
                     }
-
-                    // pick bonus action
-                    BaseAction bonusAction = Characters[me].PickBonusAction();
-                    if (bonusAction.Type != BaseAction.ActionType.None)
+                    else
                     {
-                        Characters[me].UsedBonusAction = true;
-                    }
+                        // pick action
+                        BaseAction mainAction = Characters[me].PickAction();
+                        if (mainAction.Type != BaseAction.ActionType.None)
+                        {
+                            Characters[me].UsedAction = true;
+                        }
 
-                    if (!ProcessAction(bonusAction, me))
-                    {
-                        if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
-                        result = false;
-                        break;
+                        if (!ProcessAction(mainAction, me))
+                        {
+                            if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
+                            result = false;
+                            break;
+                        }
+
+                        // pick bonus action
+                        BaseAction bonusAction = Characters[me].PickBonusAction();
+                        if (bonusAction.Type != BaseAction.ActionType.None)
+                        {
+                            Characters[me].UsedBonusAction = true;
+                        }
+
+                        if (!ProcessAction(bonusAction, me))
+                        {
+                            if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
+                            result = false;
+                            break;
+                        }
                     }
                 }
 
@@ -859,27 +942,41 @@ namespace RegressionTest
 
             foreach (BaseCharacter c in Characters.OrderBy(c => c.Name))
             {
+                string opBlock = string.Empty;
+                if (c.Stats.OpportunityAttacks > 0)
+                {
+                    opBlock = $", OApE: {c.Stats.OpportunityAttacksPerEncounter.ToString("0.##")}";
+                }
+
+                string conBlock = string.Empty;
                 if (c.Stats.ConcentrationChecksTotal > 0)
                 {
-                    output += string.Format("{0} - DPR: {1}hp, Accuracy: {2}%, Mortality: {3}%, Average Rounds: {4}, Con. Success: {5}% \n",
-                        c.Name,
-                        c.Stats.DPR.ToString("0.##"),
-                        c.Stats.Accuracy.ToString("0.##"),
-                        c.Stats.Mortality.ToString("0.##"),
-                        c.Stats.AverageRoundsActed.ToString("0.##"),
-                        c.Stats.Concentration.ToString("0.##")
-                    );
+                    conBlock = $", Con: {c.Stats.Concentration.ToString("0.##")}%";
                 }
-                else
+
+                string smiteBlock = string.Empty;
+                if (c.Stats.Smites > 0)
                 {
-                    output += string.Format("{0} - DPR: {1}hp, Accuracy: {2}%, Mortality: {3}%, Average Rounds: {4} \n",
-                        c.Name,
-                        c.Stats.DPR.ToString("0.##"),
-                        c.Stats.Accuracy.ToString("0.##"),
-                        c.Stats.Mortality.ToString("0.##"),
-                        c.Stats.AverageRoundsActed.ToString("0.##")
-                    );
+                    smiteBlock = $", SpE: {c.Stats.SmitesPerEncounter.ToString("0.##")}";
                 }
+
+                string paBlock = string.Empty;
+                if (c.Stats.PowerAttacks > 0)
+                {
+                    paBlock = $", PA: {c.Stats.PowerAttacksPercentage.ToString("0.##")}%";
+                }
+
+                output += string.Format("{0} - DPR: {1}hp, Acc: {2}%, Mor: {3}%, Av. Rnd: {4}{5}{6}{7}{8} \n",
+                    c.Name,
+                    c.Stats.DPR.ToString("0.##"),
+                    c.Stats.Accuracy.ToString("0.##"),
+                    c.Stats.Mortality.ToString("0.##"),
+                    c.Stats.AverageRoundsActed.ToString("0.##"),
+                    opBlock,
+                    conBlock,
+                    smiteBlock,
+                    paBlock
+                );
             }
 
             output += "\n";

@@ -8,15 +8,71 @@ namespace RegressionTest
 {
     public class WildfireDruid : BaseCharacter
     {
+        public bool DidExtraDamage { get; set; } = false;
+
         public bool ConjureRunning { get; set; } = false;
         public bool ConjureUsed { get; set; } = false;
 
+        public bool WildfireSummoned { get; set; } = false;
+        public bool WildfireSummonedThisTurn { get; set; } = false;
+
+        public int ScorchingRayUses { get; set; } = 0;
+
+        public class Firebolt : BaseAction
+        {
+            public Firebolt()
+            {
+                Desc = "Firebolt";
+                Type = ActionType.SpellAttack;
+                Time = ActionTime.Action;
+                AttackModifier = 8;
+                Modifier = 0;
+                TotalToRun = 1;
+                IsMagical = true;
+            }
+
+            public override int Amount()
+            {
+                int damage = Dice.D10(CriticalHit ? 4 : 2);
+                damage += Dice.D8(CriticalHit ? 2 : 1);
+                return damage + Modifier;
+            }
+        }
+
+        public class ScorchingRayWildfire : BaseAction
+        {
+            public WildfireDruid parent { get; set; }
+
+            public ScorchingRayWildfire()
+            {
+                Desc = "Scorching Ray";
+                Type = ActionType.SpellAttack;
+                Time = ActionTime.Action;
+                AttackModifier = 8;
+                Modifier = 0;
+                TotalToRun = 3;
+                IsMagical = true;
+            }
+
+            public override int Amount()
+            {
+                int damage = Dice.D6(CriticalHit ? 4 : 2);
+
+                if (parent.DidExtraDamage == false)
+                {
+                    damage += Dice.D8(CriticalHit ? 2 : 1);
+                    parent.DidExtraDamage = true;
+                }
+
+                return damage + Modifier;
+            }
+        }
 
         public class ConjureWoodlandBeingsActivate : BaseAction
         {
             public ConjureWoodlandBeingsActivate()
             {
-                Desc = "Conjure Woodland Beings";
+                Desc = "Conjure Minor Elementals";
                 Type = ActionType.Activate;
                 Time = ActionTime.Action;
             }
@@ -27,7 +83,100 @@ namespace RegressionTest
             }
         }
 
-        public WildfireDruid()
+        public class CureWoundsWildfire : SpellAction
+        {
+            public CureWoundsWildfire()
+            {
+                Desc = "Cure Wounds";
+                Level = SpellLevel.One;
+                Type = ActionType.Heal;
+                Time = ActionTime.Action;
+            }
+
+            public override int Amount()
+            {
+                int die = (int)Level;
+                return Dice.D8(die) + Dice.D8(1) + Modifier;
+            }
+        }
+
+        public class HealingWordWildfire : SpellAction
+        {
+            public HealingWordWildfire()
+            {
+                Desc = "Healing Word";
+                Level = SpellLevel.One;
+                Type = ActionType.Heal;
+                Time = ActionTime.BonusAction;
+            }
+
+            public override int Amount()
+            {
+                int die = (int)Level;
+                return Dice.D4(die) + Dice.D8(1) + Modifier;
+            }
+        }
+
+        public class SummonWildfireSpirit : BaseAction
+        {
+            public SummonWildfireSpirit()
+            {
+                Desc = "Summon Wildfire Spirit";
+                Type = ActionType.SpellSave;
+                Time = ActionTime.Action;
+                Ability = AbilityScore.Dexterity;
+                HalfDamageOnMiss = false;
+                MinTargets = 3;
+                MaxTargets = 6;
+                DC = 16;
+            }
+
+            public override int Amount()
+            {
+                return Dice.D6(2);
+            }
+        }
+
+        public class FieryTeleport : BaseAction
+        {
+            public FieryTeleport()
+            {
+                Desc = "Fiery Teleport";
+                Type = ActionType.SpellSave;
+                Time = ActionTime.BonusAction;
+                Ability = AbilityScore.Dexterity;
+                HalfDamageOnMiss = false;
+                MinTargets = 1;
+                MaxTargets = 4;
+                DC = 16;
+            }
+
+            public override int Amount()
+            {
+                return Dice.D6(1) + 4;
+            }
+        }
+
+        public class FlameSeed : BaseAction
+        {
+            public FlameSeed()
+            {
+                Desc = "Flame Seed";
+                Type = ActionType.SpellAttack;
+                Time = ActionTime.Action;
+                AttackModifier = 8;
+                Modifier = 4;
+                TotalToRun = 1;
+                IsMagical = true;
+            }
+
+            public override int Amount()
+            {
+                return Dice.D6(CriticalHit ? 2 : 1) + Modifier;
+            }
+        }
+
+        public WildfireDruid() : base()
         {
             Name = "Wildfire";
             AC = 17;
@@ -45,15 +194,80 @@ namespace RegressionTest
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 14, Mod = 2, Save = 2 });
             Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 7 });
             Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 12, Mod = 1, Save = 5 });
-            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 20, Mod = 5, Save = 9 });
+            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 18, Mod = 4, Save = 8 });
             Abilities.Add(AbilityScore.Charisma, new Stat { Score = 9, Mod = -1, Save = -1 });
         }
 
         public override void Init()
         {
             base.Init();
+            DidExtraDamage = false;
             ConjureRunning = false;
             ConjureUsed = false;
+            WildfireSummoned = false;
+            WildfireSummonedThisTurn = false;
+            ScorchingRayUses = 2;
+        }
+
+        public override bool OnNewRound()
+        {
+            bool result = base.OnNewRound();
+
+            DidExtraDamage = false;
+            WildfireSummonedThisTurn = false;
+
+            return result;
+        }
+
+        public override void OnNewTurn()
+        {
+            base.OnNewTurn();
+        }
+
+        public override BaseAction PickAction()
+        {
+            if (!ConjureUsed && !ConjureRunning)
+            {
+                ConjureRunning = true;
+                Concentrating = true;
+                ConjureUsed = true;
+                Context.ActivateSummons(Group);
+
+                return new ConjureWoodlandBeingsActivate();
+            }
+
+            if (!WildfireSummoned)
+            {
+                WildfireSummoned = true;
+                WildfireSummonedThisTurn = true;
+                return new SummonWildfireSpirit();
+            }
+
+            if (ScorchingRayUses > 0)
+            {
+                ScorchingRayUses--;
+                return new ScorchingRayWildfire { parent = this, Time = BaseAction.ActionTime.Action };
+            }
+            
+            return new Firebolt { Time = BaseAction.ActionTime.Action };
+        }
+
+        public override BaseAction PickBonusAction()
+        {
+            if (Healer && HealTarget != null)
+            {
+                return new HealingWordWildfire { Modifier = 4, Level = SpellAction.SpellLevel.One };
+            }
+
+            if (WildfireSummoned && !WildfireSummonedThisTurn)
+            {
+                if (Dice.D100() <= 67)
+                    return new FieryTeleport();
+                
+                return new FlameSeed();
+            }
+
+            return new NoAction();
         }
 
         public override void OnFailConcentration()

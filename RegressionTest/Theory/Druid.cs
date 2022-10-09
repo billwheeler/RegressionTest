@@ -78,13 +78,13 @@ namespace RegressionTest
 
             public override int Amount()
             {
-                return 5;
+                return 4;
             }
         }
 
-        public Druid()
+        public Druid() : base()
         {
-            Name = "Marcoryl";
+            Name = "Shepherd";
             AC = 17;
             Health = 75;
             MaxHealth = 75;
@@ -149,7 +149,7 @@ namespace RegressionTest
 
         public override BaseAction PickPostTurn(BaseCharacter target)
         {
-            if (BearTotemRunning)
+            if (false && BearTotemRunning)
             {
                 if (target.MyType == CreatureType.Summon)
                     return new BearTotemSummonPostTurn();

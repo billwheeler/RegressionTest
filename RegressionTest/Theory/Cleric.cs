@@ -178,7 +178,7 @@ namespace RegressionTest
             }
         }
 
-        public Cleric()
+        public Cleric() : base()
         {
             Name = "Leonid";
             AC = 20;

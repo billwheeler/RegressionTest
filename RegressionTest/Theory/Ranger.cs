@@ -125,7 +125,7 @@ namespace RegressionTest
             }
         }
 
-        public Ranger()
+        public Ranger() : base()
         {
             Name = "Marinyth";
             AC = 17;
@@ -173,11 +173,13 @@ namespace RegressionTest
             return new NoAction { Time = BaseAction.ActionTime.BonusAction };
         }
 
-        public override void OnNewRound()
+        public override bool OnNewRound()
         {
-            base.OnNewRound();
+            bool result = base.OnNewRound();
 
             PlanarWarriorUsed = false;
+
+            return result;
         }
 
         public override void OnNewTurn()

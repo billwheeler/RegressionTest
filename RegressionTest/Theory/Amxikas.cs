@@ -106,6 +106,7 @@ namespace RegressionTest
                     // divine smite
                     if (Dice.D100() <= percentToSmite)
                     {
+                        parent.Stats.Smites++;
                         _smitedThisTurn = true;
                         damage += Dice.D8(DiceNumberForSmite(CriticalHit));
                     }
@@ -199,20 +200,20 @@ namespace RegressionTest
         public int LayOnHandsPool { get; set; } = 45;
         public int MyNemesis { get; set; } = -1;
 
-        public Amxikas()
+        public Amxikas() : base()
         {
             Name = "Amxikas";
             AC = 18;
             Health = 76;
             MaxHealth = 76;
-            HealingThreshold = 19;
+            HealingThreshold = 18;
             Group = Team.TeamOne;
             Healer = true;
             Priority = HealPriority.Medium;
             InitMod = 5;
             WarCaster = true;
             MyType = CreatureType.PC;
-            OpportunityAttackChance = 60;
+            OpportunityAttackChance = 33;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 3 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 20, Mod = 5, Save = 8 });
@@ -270,7 +271,8 @@ namespace RegressionTest
 
         public override BaseAction PickReaction(bool opportunityAttack)
         {
-            return new RevenantBlade { Time = BaseAction.ActionTime.Reaction, parent = this };
+            Stats.OpportunityAttacks++;
+            return new RevenantBlade { Time = BaseAction.ActionTime.Reaction, TotalToRun = 1, parent = this };
         }
 
         public override void OnNewTurn()

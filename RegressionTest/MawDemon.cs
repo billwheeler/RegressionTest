@@ -26,7 +26,7 @@ namespace RegressionTest
             }
         }
 
-        public MawDemon()
+        public MawDemon() : base()
         {
             Name = "Maw Demon";
             AC = 13;

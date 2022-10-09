@@ -16,14 +16,14 @@ namespace RegressionTest
                 Type = ActionType.MeleeAttack;
                 Time = ActionTime.Action;
                 AttackModifier = 9;
-                Modifier = 5;
-                TotalToRun = 3;
+                Modifier = 4;
+                TotalToRun = 2;
             }
 
             public override int Amount()
             {
-                return Dice.D10(CriticalHit ? 4 : 2) + Modifier;
-
+                int damage = Dice.D6(CriticalHit ? 4 : 2);
+                return damage + Modifier;
             }
         }
 
@@ -40,21 +40,28 @@ namespace RegressionTest
 
             public override int Amount()
             {
-                return Dice.D10(5);
+                return Dice.D6(6) + 4;
             }
         }
 
-        public Wight()
+        public Wight() : base()
         {
             Name = "Wight";
             AC = 14;
             InitMod = 4;
-            Health = 127;
-            MaxHealth = 127;
+            Health = 69;
+            MaxHealth = 69;
             Group = Team.TeamTwo;
             Priority = HealPriority.Medium;
             IsUndead = true;
             ResistsNonmagical = true;
+
+            Abilities.Add(AbilityScore.Strength, new Stat { Score = 18, Mod = 4, Save = 4 });
+            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 14, Mod = 2, Save = 2 });
+            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 3 });
+            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 10, Mod = 0, Save = 0 });
+            Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 13, Mod = 1, Save = 1 });
+            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 15, Mod = 2, Save = 2 });
         }
 
         public override BaseAction PickAction()

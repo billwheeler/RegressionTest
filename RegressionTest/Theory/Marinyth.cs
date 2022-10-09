@@ -28,7 +28,7 @@ namespace RegressionTest
 
                 if (SharpshooterEnabled)
                 {
-                    if (ShouldPowerAttack(target.AC, 14, 19))
+                    if (ShouldPowerAttack(target.AC, 11, 16))
                     {
                         _ssThisTurn = true;
                         AttackModifier = 6;
@@ -103,6 +103,7 @@ namespace RegressionTest
 
                 if (_ssThisTurn)
                 {
+                    parent.Stats.PowerAttacks++;
                     damage += 10;
                 }
 
@@ -125,7 +126,7 @@ namespace RegressionTest
             }
         }
 
-        public Marinyth()
+        public Marinyth() : base()
         {
             Name = "Marinyth";
             AC = 17;
@@ -144,9 +145,9 @@ namespace RegressionTest
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 4 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 20, Mod = 5, Save = 9 });
             Abilities.Add(AbilityScore.Constitution, new Stat { Score = 14, Mod = 2, Save = 3 });
-            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 12, Mod = 1, Save = 1 });
+            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 10, Mod = 0, Save = 0 });
             Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 16, Mod = 3, Save = 7 });
-            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 9, Mod = -1, Save = -1 });
+            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 8, Mod = -1, Save = -1 });
         }
 
         public override void Init()

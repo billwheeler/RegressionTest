@@ -45,7 +45,7 @@ namespace RegressionTest
             }
         }
 
-        public Gnoll()
+        public Gnoll() : base()
         {
             Name = "Gnoll";
             AC = 15;

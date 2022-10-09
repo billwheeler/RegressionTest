@@ -12,7 +12,9 @@ namespace RegressionTest
         Bless,
         Bane,
         UnsettlingWords,
-        HypnoticPattern
+        HypnoticPattern,
+        Inspired,
+        BlackTentacles
     }
 
     public class SpellEffect
@@ -21,5 +23,6 @@ namespace RegressionTest
         public int DC { get; set; }
         public AbilityScore Ability { get; set; }
         public SpellEffectType Type { get; set; }
+        public bool Active { get; set; } = false;
     }
 }
