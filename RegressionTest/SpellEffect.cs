@@ -14,7 +14,8 @@ namespace RegressionTest
         UnsettlingWords,
         HypnoticPattern,
         Inspired,
-        BlackTentacles
+        BlackTentacles,
+        ConqueringPresense
     }
 
     public class SpellEffect
@@ -23,6 +24,7 @@ namespace RegressionTest
         public int DC { get; set; }
         public AbilityScore Ability { get; set; }
         public SpellEffectType Type { get; set; }
+        public bool SaveAtEndOfRound { get; set; } = false;
         public bool Active { get; set; } = false;
     }
 }

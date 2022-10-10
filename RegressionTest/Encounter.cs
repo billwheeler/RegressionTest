@@ -121,9 +121,8 @@ namespace RegressionTest
             }
         }
 
-        public void EndHypnoticPattern(Team group)
+        public void EndEffect(Team group, SpellEffectType type)
         {
-            int count = 0;
             for (int i = 0; i < Characters.Count; i++)
             {
                 if (Characters[i].Group == group)
@@ -132,31 +131,9 @@ namespace RegressionTest
                 if (!Characters[i].Alive)
                     continue;
 
-                if (Characters[i].Incapacitated)
+                if (Characters[i].ActiveEffects[type].Active)
                 {
-                    count++;
-                    Characters[i].ActiveEffects[SpellEffectType.HypnoticPattern].Active = false;
-                    Characters[i].Incapacitated = false;
-                }
-            }
-        }
-
-        public void EndBlackTentacles(Team group)
-        {
-            int count = 0;
-            for (int i = 0; i < Characters.Count; i++)
-            {
-                if (Characters[i].Group == group)
-                    continue;
-
-                if (!Characters[i].Alive)
-                    continue;
-
-                if (Characters[i].Incapacitated)
-                {
-                    count++;
-                    Characters[i].ActiveEffects[SpellEffectType.BlackTentacles].Active = false;
-                    Characters[i].Incapacitated = false;
+                    Characters[i].ActiveEffects[type].Active = false;
                 }
             }
         }
@@ -696,14 +673,10 @@ namespace RegressionTest
             {
                 // am dead, am big cat no more
                 if (!Characters[me].Alive)
-                {
                     continue;
-                }
 
-                if (Characters[me].MyType == CreatureType.Summon && Characters[me].BeenSummoned == false)
-                {
+                if (Characters[me].MyType == CreatureType.Summon && !Characters[me].BeenSummoned)
                     continue;
-                }
 
                 // has a team prevailed?
                 if (CurrentEnemies(Team.TeamOne).Count == 0 || CurrentEnemies(Team.TeamTwo).Count == 0)
@@ -715,18 +688,13 @@ namespace RegressionTest
 
                 Characters[me].Stats.Rounds++;
                 if (!Characters[me].OnNewRound())
-                {
                     continue;
-                }
 
                 if (Characters[me].OpportunityAttackChance > 0)
-                {
                     OpportunityAttackers.Add(me);
-                }
 
                 if (!Characters[me].Incapacitated)
                 {
-
                     // are we a healer? does anyone need it?
                     if (AllowHealing && Characters[me].Healer)
                     {
@@ -760,21 +728,16 @@ namespace RegressionTest
 
                 // am dead, am big cat no more
                 if (!Characters[me].Alive)
-                {
                     continue;
-                }
 
                 if (!Characters[me].Incapacitated)
                 {
-
                     if (Characters[me].BonusActionFirst)
                     {
                         // pick bonus action
                         BaseAction bonusAction = Characters[me].PickBonusAction();
                         if (bonusAction.Type != BaseAction.ActionType.None)
-                        {
                             Characters[me].UsedBonusAction = true;
-                        }
 
                         if (!ProcessAction(bonusAction, me))
                         {
@@ -786,9 +749,7 @@ namespace RegressionTest
                         // pick action
                         BaseAction mainAction = Characters[me].PickAction();
                         if (mainAction.Type != BaseAction.ActionType.None)
-                        {
                             Characters[me].UsedAction = true;
-                        }
 
                         if (!ProcessAction(mainAction, me))
                         {
@@ -802,9 +763,7 @@ namespace RegressionTest
                         // pick action
                         BaseAction mainAction = Characters[me].PickAction();
                         if (mainAction.Type != BaseAction.ActionType.None)
-                        {
                             Characters[me].UsedAction = true;
-                        }
 
                         if (!ProcessAction(mainAction, me))
                         {
@@ -816,9 +775,7 @@ namespace RegressionTest
                         // pick bonus action
                         BaseAction bonusAction = Characters[me].PickBonusAction();
                         if (bonusAction.Type != BaseAction.ActionType.None)
-                        {
                             Characters[me].UsedBonusAction = true;
-                        }
 
                         if (!ProcessAction(bonusAction, me))
                         {
@@ -866,33 +823,23 @@ namespace RegressionTest
 
                     // am dead, am big cat no more
                     if (!Characters[me].Alive)
-                    {
                         continue;
-                    }
 
                     if (Characters[me].Incapacitated)
-                    {
                         continue;
-                    }
 
                     if (Characters[me].UsedReaction)
-                    {
                         continue;
-                    }
 
                     if (Dice.D100() > Characters[me].OpportunityAttackChance)
-                    {
                         continue;
-                    }
 
                     Characters[me].OnNewTurn();
 
                     // pick action
                     BaseAction reAction = Characters[me].PickReaction(true);
                     if (reAction.Type != BaseAction.ActionType.None)
-                    {
                         Characters[me].UsedReaction = true;
-                    }
 
                     if (!ProcessAction(reAction, me))
                     {

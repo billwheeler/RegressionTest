@@ -99,6 +99,10 @@ namespace RegressionTest
 
                     if (enemyIsNemesis)
                         percentToSmite = 40;
+                    else if (enemyIsUndead)
+                        percentToSmite = 20;
+                    else if (enemyIsFiend)
+                        percentToSmite = 20;
 
                     if (CriticalHit)
                         percentToSmite = 100;
@@ -213,7 +217,7 @@ namespace RegressionTest
             InitMod = 5;
             WarCaster = true;
             MyType = CreatureType.PC;
-            OpportunityAttackChance = 33;
+            OpportunityAttackChance = 40;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 3 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 20, Mod = 5, Save = 8 });
@@ -231,7 +235,6 @@ namespace RegressionTest
 
             ShouldUseSmites = true;
             CanVowOfEnmity = true;
-            CanSpiritShroud = true;
         }
 
         public override void OnNewEncounter()

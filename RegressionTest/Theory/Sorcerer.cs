@@ -36,7 +36,7 @@ namespace RegressionTest
         public Sorcerer() : base()
         {
             Name = "Sorcerer";
-            AC = 16;
+            AC = 15;
             InitMod = 2;
             Health = 65;
             MaxHealth = 65;
@@ -51,7 +51,7 @@ namespace RegressionTest
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 0 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 14, Mod = 2, Save = 2 });
             Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 7 });
-            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 12, Mod = 1, Save = 1 });
+            Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 14, Mod = 2, Save = 2 });
             Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 9, Mod = -1, Save = -1 });
             Abilities.Add(AbilityScore.Charisma, new Stat { Score = 20, Mod = 5, Save = 9 });
         }
@@ -85,14 +85,14 @@ namespace RegressionTest
         {
             if (!DidBigSpell)
             {
-                if (Context.AnyoneHaveEffect(Group, SpellEffectType.SynapticStatic))
+                /*if (Context.AnyoneHaveEffect(Group, SpellEffectType.SynapticStatic))
                 {
                     DidBigSpell = true;
                     Concentrating = true;
                     HypnoticPatternRunning = true;
                     return new HypnoticPattern(17);
                 }
-                else
+                else*/
                 {
                     DidBigSpell = true;
                     return new SynapticStatic(17);
@@ -160,13 +160,13 @@ namespace RegressionTest
             if (HypnoticPatternRunning)
             {
                 HypnoticPatternRunning = false;
-                Context.EndHypnoticPattern(Group);
+                Context.EndEffect(Group, SpellEffectType.HypnoticPattern);
             }
 
             if (BlackTentaclesRunning)
             {
                 BlackTentaclesRunning = false;
-                Context.EndBlackTentacles(Group);
+                Context.EndEffect(Group, SpellEffectType.BlackTentacles);
             }
         }
 
@@ -177,13 +177,13 @@ namespace RegressionTest
             if (HypnoticPatternRunning)
             {
                 HypnoticPatternRunning = false;
-                Context.EndHypnoticPattern(Group);
+                Context.EndEffect(Group, SpellEffectType.HypnoticPattern);
             }
 
             if (BlackTentaclesRunning)
             {
                 BlackTentaclesRunning = false;
-                Context.EndBlackTentacles(Group);
+                Context.EndEffect(Group, SpellEffectType.BlackTentacles);
             }
         }
     }

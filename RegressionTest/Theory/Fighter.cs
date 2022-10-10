@@ -8,8 +8,7 @@ namespace RegressionTest
 {
     public class Fighter : BaseCharacter
     {
-        public int SuperiorityDice { get; set; }
-        public bool UsedSuperiorityDice { get; set; }
+        public bool UsedGiantsMight { get; set; }
 
         public bool ShouldRadiantSoul { get; set; } = true;
         public bool RadiantSoulRunning { get; set; }
@@ -18,41 +17,13 @@ namespace RegressionTest
         public bool UsedActionSurge { get; set; } = false;
         public bool UsedSecondWind { get; set; } = false;
 
-        public GlaivePM Glaive { get; set; }
-
-        public class GlaivePM : BaseAction
+        public class Warhammer : BaseAction
         {
-            public Fighter parent { get; set; }
-
-            private string _desc = "Glaive";
-            private bool _paThisTurn = false;
-            private bool _sdThisTurn = false;
+            private string _desc = "Warhammer";
+            private bool _gmThisTurn = false;
             private bool _rsThisTurn = false;
-            private readonly bool PowerAttackEnabled = true;
 
-            public override void PreHit(BaseCharacter attacker, BaseCharacter target)
-            {
-                base.PreHit(attacker, target);
-
-                if (PowerAttackEnabled)
-                {
-                    if (ShouldPowerAttack(target.AC, 13, 18))
-                    {
-                        _paThisTurn = true;
-                        AttackModifier = 4;
-                    }
-                    else
-                    {
-                        _paThisTurn = false;
-                        AttackModifier = 9;
-                    }
-                }
-                else
-                {
-                    _paThisTurn = false;
-                    AttackModifier = 9;
-                }
-            }
+            public Fighter parent { get; set; }
 
             public override string Desc
             {
@@ -60,21 +31,16 @@ namespace RegressionTest
                 {
                     string output = _desc;
 
-                    if (_paThisTurn)
+                    if (_gmThisTurn)
                     {
-                        output += " (GWM)";
-                    }
-
-                    if (_sdThisTurn)
-                    {
-                        output += " (SD)";
-                        _sdThisTurn = false;
+                        output += " (GM)";
+                        _gmThisTurn = false;
                     }
 
                     if (_rsThisTurn)
                     {
                         output += " (RS)";
-                        _sdThisTurn = false;
+                        _rsThisTurn = false;
                     }
 
                     return output;
@@ -82,27 +48,25 @@ namespace RegressionTest
                 set { _desc = value; }
             }
 
-            public GlaivePM()
+            public Warhammer()
             {
-                Desc = "Glaive";
+                Desc = "Warhammer";
                 Type = ActionType.MeleeAttack;
+                Time = ActionTime.Action;
                 AttackModifier = 9;
-                Modifier = 5;
+                Modifier = 7;
                 IsMagical = true;
             }
 
             public override int Amount()
             {
-                int damage = Time != ActionTime.BonusAction ?
-                    Dice.D10(CriticalHit ? 2 : 1) :
-                    Dice.D4(CriticalHit ? 2 : 1);
+                int damage = Dice.D8(CriticalHit ? 2 : 1);
 
-                if (!parent.UsedSuperiorityDice && parent.SuperiorityDice > 0)
+                if (!parent.UsedGiantsMight)
                 {
-                    parent.UsedSuperiorityDice = true;
-                    parent.SuperiorityDice--;
-                    _sdThisTurn = true;
-                    damage += Dice.D8(CriticalHit ? 2 : 1);
+                    parent.UsedGiantsMight = true;
+                    _gmThisTurn = true;
+                    damage += Dice.D6(CriticalHit ? 2 : 1);
                 }
 
                 if (parent.RadiantSoulRunning && !parent.RadiantSoulUsed)
@@ -112,10 +76,67 @@ namespace RegressionTest
                     damage += 4;
                 }
 
-                if (_paThisTurn)
+                return damage + Modifier;
+            }
+        }
+
+        public class ShieldBash : BaseAction
+        {
+            private string _desc = "Shield Bash";
+            private bool _gmThisTurn = false;
+            private bool _rsThisTurn = false;
+
+            public Fighter parent { get; set; }
+
+            public override string Desc
+            {
+                get
                 {
-                    parent.Stats.PowerAttacks++;
-                    damage += 10;
+                    string output = _desc;
+
+                    if (_gmThisTurn)
+                    {
+                        output += " (GM)";
+                        _gmThisTurn = false;
+                    }
+
+                    if (_rsThisTurn)
+                    {
+                        output += " (RS)";
+                        _rsThisTurn = false;
+                    }
+
+                    return output;
+                }
+                set { _desc = value; }
+            }
+
+            public ShieldBash()
+            {
+                Desc = "Shield Bash";
+                Type = ActionType.MeleeAttack;
+                Time = ActionTime.Action;
+                AttackModifier = 9;
+                Modifier = 7;
+                IsMagical = true;
+            }
+
+            public override int Amount()
+            {
+                int damage = Dice.D4(CriticalHit ? 2 : 1);
+
+                if (!parent.UsedGiantsMight)
+                {
+                    parent.UsedGiantsMight = true;
+                    _gmThisTurn = true;
+                    damage += Dice.D6(CriticalHit ? 2 : 1);
+                }
+
+                if (parent.RadiantSoulRunning && !parent.RadiantSoulUsed)
+                {
+                    parent.RadiantSoulUsed = true;
+                    _rsThisTurn = true;
+                    damage += 4;
                 }
 
                 return damage + Modifier;
@@ -140,7 +161,7 @@ namespace RegressionTest
         public Fighter() : base()
         {
             Name = "Fighter";
-            AC = 18;
+            AC = 20;
             Health = 85;
             MaxHealth = 85;
             HealingThreshold = 18;
@@ -149,9 +170,7 @@ namespace RegressionTest
             Priority = HealPriority.Medium;
             InitMod = 0;
             MyType = CreatureType.PC;
-            OpportunityAttackChance = 67;
-
-            Glaive = new GlaivePM { parent = this };
+            OpportunityAttackChance = 10;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 20, Mod = 5, Save = 9 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 10, Mod = 0, Save = 0 });
@@ -164,8 +183,7 @@ namespace RegressionTest
         public override void Init()
         {
             base.Init();
-            SuperiorityDice = 5;
-            UsedSuperiorityDice = false;
+            UsedGiantsMight = false;
             UsedActionSurge = false;
             UsedSecondWind = false;
             RadiantSoulRunning = false;
@@ -176,12 +194,8 @@ namespace RegressionTest
         {
             base.OnNewTurn();
 
-            UsedSuperiorityDice = false;
+            UsedGiantsMight = false;
             RadiantSoulUsed = false;
-
-            Glaive.CurrentRunning = 0;
-            Glaive.CurrentHits = 0;
-            Glaive.HasCritted = false;
         }
 
         public override BaseAction PickAction()
@@ -200,9 +214,7 @@ namespace RegressionTest
                 UsedActionSurge = true;
             }
 
-            Glaive.Time = BaseAction.ActionTime.Action;
-            Glaive.TotalToRun = total;
-            return Glaive;
+            return new Warhammer { Time = BaseAction.ActionTime.Action, TotalToRun = total, parent = this };
         }
 
         public override BaseAction PickBonusAction()
@@ -214,18 +226,14 @@ namespace RegressionTest
                 Heal(amount);
             }
 
-            Glaive.Time = BaseAction.ActionTime.BonusAction;
-            Glaive.TotalToRun = 1;
-            return Glaive;
+            return new ShieldBash { Time = BaseAction.ActionTime.BonusAction, TotalToRun = 1, parent = this };
         }
 
         public override BaseAction PickReaction(bool opportunityAttack)
         {
             Stats.OpportunityAttacks++;
 
-            Glaive.Time = BaseAction.ActionTime.Reaction;
-            Glaive.TotalToRun = 1;
-            return Glaive;
+            return new Warhammer { Time = BaseAction.ActionTime.Reaction, TotalToRun = 1, parent = this };
         }
 
         public override void OnDeath()

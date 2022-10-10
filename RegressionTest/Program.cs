@@ -25,23 +25,25 @@ namespace RegressionTest
     class Program
     {
         public static bool output = false;
-        public static int passes = 60000;
+        public static int passes = 30000;
 
         public static Encounter shits()
         {
-            bool nightwalker = true;
-            bool useDruid = true;
+            bool nightwalker = false;
+            bool useDruid = false;
             bool shepherd = false;
 
             Encounter enc = new Encounter { OutputAttacks = output, AllowHealing = true };
 
-            enc.Add(new Amxikas());
+            enc.Add(new Amxikas { CanSpiritShroud = nightwalker ? false : true });
             //enc.Add(new Rogue());
             //enc.Add(new EldritchKnight());
+            //enc.Add(new HexBard());
             enc.Add(new Bard());
-            enc.Add(new Fighter { ShouldRadiantSoul = nightwalker });
+            //enc.Add(new Fighter { ShouldRadiantSoul = nightwalker });
+            //enc.Add(new Paladin());
             enc.Add(new Marinyth { ShouldHuntersMark = true });
-            //enc.Add(new Sorcerer());
+            enc.Add(new Sorcerer());
             //enc.Add(new GenieWarlock());
 
             if (useDruid)
@@ -76,8 +78,8 @@ namespace RegressionTest
             }
             else
             {
-                enc.Add(new NerfedTwilight());
-                //enc.Add(new Murie());
+                //enc.Add(new NerfedTwilight());
+                enc.Add(new Murie());
                 //enc.Add(new Paladin());
                 //enc.Add(new Fighter());
             }
@@ -151,9 +153,8 @@ namespace RegressionTest
         {
             int origRow = Console.CursorTop;
             int origCol = Console.CursorLeft;
-            // Console.WindowWidth = 10;  // this works. 
             int width = Console.WindowWidth;
-            x = x % width;
+            x %= width;
             try
             {
                 Console.SetCursorPosition(x, 1);

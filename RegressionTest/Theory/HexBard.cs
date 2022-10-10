@@ -6,20 +6,20 @@ using System.Threading.Tasks;
 
 namespace RegressionTest
 {
-    public class Bard : BaseCharacter
+    public class HexBard : BaseCharacter
     {
         public class Rapier : BaseAction
         {
-            public readonly bool CanUseBoomingBlade = false;
+            public readonly bool CanUseBoomingBlade = true;
 
             public Rapier()
             {
                 Desc = "Rapier";
                 Type = ActionType.SpellAttack;
                 Time = ActionTime.Action;
-                AttackModifier = 6;
-                Modifier = 2;
-                TotalToRun = 1;
+                AttackModifier = 9;
+                Modifier = 5;
+                TotalToRun = 2;
                 IsMagical = true;
             }
 
@@ -41,42 +41,24 @@ namespace RegressionTest
             }
         }
 
-        public class RayOfFrost : BaseAction
+        public class EldritchBlast : BaseAction
         {
-            public RayOfFrost()
+            public EldritchBlast()
             {
-                Desc = "Ray of Frost";
+                Desc = "Eldritch Blast";
                 Type = ActionType.SpellAttack;
                 Time = ActionTime.Action;
-                AttackModifier = 8;
+                AttackModifier = 9;
                 Modifier = 0;
-                TotalToRun = 1;
+                TotalToRun = 2;
                 IsMagical = true;
             }
 
             public override int Amount()
             {
-                int damage = Dice.D8(CriticalHit ? 4 : 2);
+                int damage = Dice.D10(CriticalHit ? 2 : 1);
 
                 return damage + Modifier;
-            }
-        }
-
-        public class UnsettlingWords : BaseAction
-        {
-            public UnsettlingWords()
-            {
-                Desc = "Unsettling Words";
-                Type = ActionType.Apply;
-                Time = ActionTime.BonusAction;
-                MinTargets = 1;
-                MaxTargets = 1;
-
-                EffectToApply = new SpellEffect
-                {
-                    Name = "Unsettling Words",
-                    Type = SpellEffectType.UnsettlingWords
-                };
             }
         }
 
@@ -99,7 +81,7 @@ namespace RegressionTest
         public bool DidBigSpell { get; set; }
         public bool HypnoticPatternRunning { get; set; }
 
-        public Bard() : base()
+        public HexBard() : base()
         {
             Name = "Orianna";
             AC = 18;
@@ -112,14 +94,14 @@ namespace RegressionTest
             MyType = CreatureType.PC;
             Healer = true;
             WarCaster = false;
-            OpportunityAttackChance = 5;
+            OpportunityAttackChance = 10;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 0 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 14, Mod = 2, Save = 2 });
             Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 7 });
             Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 12, Mod = 1, Save = 1 });
             Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 8, Mod = -1, Save = 3 });
-            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 18, Mod = 4, Save = 8 });
+            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 20, Mod = 5, Save = 9 });
         }
 
         public override void Init()
@@ -133,7 +115,7 @@ namespace RegressionTest
         public override void OnNewEncounter()
         {
             base.OnNewEncounter();
-            SetTempHitPoints(10);
+            SetTempHitPoints(15);
             ShieldUses = 4;
         }
 
@@ -160,17 +142,17 @@ namespace RegressionTest
         {
             if (!DidBigSpell)
             {
-                /*if (Context.AnyoneHaveEffect(Group, SpellEffectType.SynapticStatic))
+                if (Context.AnyoneHaveEffect(Group, SpellEffectType.SynapticStatic))
                 {
                     DidBigSpell = true;
                     Concentrating = true;
                     HypnoticPatternRunning = true;
-                    return new HypnoticPattern(16);
+                    return new HypnoticPattern(17);
                 }
-                else*/
+                else
                 {
                     DidBigSpell = true;
-                    return new SynapticStatic(16);
+                    return new SynapticStatic(17);
                 }
             }
 
@@ -184,19 +166,14 @@ namespace RegressionTest
                 return new DodgeAction { Time = BaseAction.ActionTime.Action };
             }
 
-            if (Dice.D100() <= 10)
+            if (Dice.D100() <= 80)
                 return new Rapier();
 
-            return new RayOfFrost();
+            return new EldritchBlast();
         }
 
         public override BaseAction PickBonusAction()
         {
-            if (!DidBigSpell)
-            {
-                return new UnsettlingWords();
-            }
-
             if (Healer && HealTarget != null)
             {
                 return new HealingWord { Modifier = 4, Level = SpellAction.SpellLevel.One };
@@ -222,6 +199,37 @@ namespace RegressionTest
         {
             Stats.OpportunityAttacks++;
             return new Rapier { Time = BaseAction.ActionTime.Reaction };
+        }
+
+        public override void PreHitCalc(int attackRoll, int modifier, bool potentiallyPowerful, bool criticalHit)
+        {
+            bool shouldCastShield = false;
+
+            if (!HasShieldRunning && ShieldUses > 0)
+            {
+                if (attackRoll + modifier > AC)
+                {
+                    if (Health < 30)
+                    {
+                        shouldCastShield = true;
+                    }
+                    else if (potentiallyPowerful)
+                    {
+                        shouldCastShield = true;
+                    }
+                    else if (criticalHit)
+                    {
+                        shouldCastShield = true;
+                    }
+                }
+            }
+
+            if (shouldCastShield)
+            {
+                UsedReaction = true;
+                HasShieldRunning = true;
+                ShieldUses--;
+            }
         }
 
         public override void OnFailConcentration()

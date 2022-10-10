@@ -44,8 +44,8 @@ namespace RegressionTest
         public GenieWarlock() : base()
         {
             //Name = "Ketrick";
-            Name = "Lakrissa";
-            //Name = "Tolson";
+            //Name = "Lakrissa";
+            Name = "Tolson";
             AC = 18;
             InitMod = 2;
             Health = 75;
@@ -86,16 +86,16 @@ namespace RegressionTest
         {
             if (!DidBigSpell)
             {
-                if (Context.AnyoneHaveEffect(Group, SpellEffectType.SynapticStatic))
+                /*if (Context.AnyoneHaveEffect(Group, SpellEffectType.SynapticStatic))
                 {
                     DidBigSpell = true;
                     Concentrating = true;
                     HypnoticPatternRunning = true;
                     return new HypnoticPattern(17);
                 }
-                else
+                else*/
                 {
-                    //DidBigSpell = true;
+                    DidBigSpell = true;
                     return new SynapticStatic(17);
                 }
             }
@@ -129,7 +129,7 @@ namespace RegressionTest
             if (HypnoticPatternRunning)
             {
                 HypnoticPatternRunning = false;
-                Context.EndHypnoticPattern(Group);
+                Context.EndEffect(Group, SpellEffectType.HypnoticPattern);
             }
         }
 
@@ -140,7 +140,7 @@ namespace RegressionTest
             if (HypnoticPatternRunning)
             {
                 HypnoticPatternRunning = false;
-                Context.EndHypnoticPattern(Group);
+                Context.EndEffect(Group, SpellEffectType.HypnoticPattern);
             }
         }
     }

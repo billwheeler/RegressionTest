@@ -171,20 +171,34 @@ namespace RegressionTest
                 }
             }
 
+            if (attacker.ActiveEffects[SpellEffectType.ConqueringPresense].Active)
+            {
+                switch (abilityRoll)
+                {
+                    case AbilityRoll.Advantage:
+                    case AbilityRoll.ElvenAccuracy:
+                        abilityRoll = AbilityRoll.Normal;
+                        break;
+                    default:
+                        abilityRoll = AbilityRoll.Disadvantage;
+                        break;
+                }
+            }
+
             int mod = AttackModifier;
             int roll = Dice.MakeAbilityRoll(abilityRoll);
 
-            if (attacker.ActiveEffects.ContainsKey(SpellEffectType.Bless))
+            if (attacker.ActiveEffects[SpellEffectType.Bless].Active)
             {
                 roll += Dice.D4();
             }
 
-            if (attacker.ActiveEffects.ContainsKey(SpellEffectType.Bane))
+            if (attacker.ActiveEffects[SpellEffectType.Bane].Active)
             {
                 roll -= Dice.D4();
             }
 
-            if (attacker.ActiveEffects.ContainsKey(SpellEffectType.SynapticStatic))
+            if (attacker.ActiveEffects[SpellEffectType.SynapticStatic].Active)
             {
                 roll -= Dice.D6();
             }

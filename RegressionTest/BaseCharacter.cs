@@ -101,7 +101,16 @@ namespace RegressionTest
         public bool IsFiend { get; set; } = false;
 
         public bool ResistsNonmagical { get; set; } = false;
-        public bool Incapacitated { get; set; } = false;
+        public bool Incapacitated
+        {
+            get
+            {
+                if (ActiveEffects[SpellEffectType.HypnoticPattern].Active)
+                    return true;
+
+                return false;
+            }
+        }
 
         public BaseCharacter()
         {
@@ -116,7 +125,8 @@ namespace RegressionTest
                 Active = false,
                 DC = 0,
                 Name = "Bane",
-                Type = SpellEffectType.Bane
+                Type = SpellEffectType.Bane,
+                SaveAtEndOfRound = true
             });
 
             ActiveEffects.Add(SpellEffectType.Bless, new SpellEffect
@@ -125,7 +135,8 @@ namespace RegressionTest
                 Active = false,
                 DC = 0,
                 Name = "Bless",
-                Type = SpellEffectType.Bless
+                Type = SpellEffectType.Bless,
+                SaveAtEndOfRound = false
             });
 
             ActiveEffects.Add(SpellEffectType.HypnoticPattern, new SpellEffect
@@ -134,7 +145,8 @@ namespace RegressionTest
                 Active = false,
                 DC = 0,
                 Name = "Hypnotic Pattern",
-                Type = SpellEffectType.HypnoticPattern
+                Type = SpellEffectType.HypnoticPattern,
+                SaveAtEndOfRound = false
             });
 
             ActiveEffects.Add(SpellEffectType.SynapticStatic, new SpellEffect
@@ -143,7 +155,8 @@ namespace RegressionTest
                 Active = false,
                 DC = 0,
                 Name = "Synaptic Static",
-                Type = SpellEffectType.SynapticStatic
+                Type = SpellEffectType.SynapticStatic,
+                SaveAtEndOfRound = true
             });
 
             ActiveEffects.Add(SpellEffectType.UnsettlingWords, new SpellEffect
@@ -152,7 +165,8 @@ namespace RegressionTest
                 Active = false,
                 DC = 0,
                 Name = "Unsettling Words",
-                Type = SpellEffectType.UnsettlingWords
+                Type = SpellEffectType.UnsettlingWords,
+                SaveAtEndOfRound = false
             });
 
             ActiveEffects.Add(SpellEffectType.Inspired, new SpellEffect
@@ -161,7 +175,8 @@ namespace RegressionTest
                 Active = false,
                 DC = 0,
                 Name = "Inspired",
-                Type = SpellEffectType.Inspired
+                Type = SpellEffectType.Inspired,
+                SaveAtEndOfRound = false
             });
 
             ActiveEffects.Add(SpellEffectType.BlackTentacles, new SpellEffect
@@ -170,7 +185,18 @@ namespace RegressionTest
                 Active = false,
                 DC = 0,
                 Name = "Black Tentacles",
-                Type = SpellEffectType.BlackTentacles
+                Type = SpellEffectType.BlackTentacles,
+                SaveAtEndOfRound = true
+            });
+
+            ActiveEffects.Add(SpellEffectType.ConqueringPresense, new SpellEffect
+            {
+                Ability = AbilityScore.Wisdom,
+                Active = false,
+                DC = 0,
+                Name = "Conquering Presense",
+                Type = SpellEffectType.ConqueringPresense,
+                SaveAtEndOfRound = true
             });
         }
 
@@ -203,16 +229,10 @@ namespace RegressionTest
             }
         }
 
-        public void ApplyEffect(SpellEffect effect)
+        public virtual void ApplyEffect(SpellEffect effect)
         {
             ActiveEffects[effect.Type].Active = true;
             ActiveEffects[effect.Type].DC = effect.DC;
-
-            if (effect.Type == SpellEffectType.HypnoticPattern)
-                Incapacitated = true;
-
-            if (effect.Type == SpellEffectType.BlackTentacles)
-                Incapacitated = true;
         }
 
         public virtual void RollInitiative()
@@ -256,6 +276,14 @@ namespace RegressionTest
         {
             if (Abilities.ContainsKey(score))
             {
+                if (ActiveEffects[SpellEffectType.ConqueringPresense].Active)
+                {
+                    if (rollType == AbilityRoll.Advantage || rollType == AbilityRoll.ElvenAccuracy)
+                        rollType = AbilityRoll.Normal;
+                    else
+                        rollType = AbilityRoll.Disadvantage;
+                }
+
                 int roll = Dice.MakeAbilityRoll(rollType) + Abilities[score].Save;
 
                 if (ActiveEffects[SpellEffectType.UnsettlingWords].Active)
@@ -334,9 +362,9 @@ namespace RegressionTest
 
         public bool TakeDamage(int amount)
         {
-            if (amount > 0 && Incapacitated)
+            if (amount > 0 && ActiveEffects[SpellEffectType.HypnoticPattern].Active)
             {
-                Incapacitated = false;
+                ActiveEffects[SpellEffectType.HypnoticPattern].Active = false;
             }
 
             if (TempHitPoints > 0)
@@ -398,8 +426,14 @@ namespace RegressionTest
             if (IsHidden)
                 nameDesc += " (hidden)";
 
-            if (Incapacitated)
+            if (ActiveEffects[SpellEffectType.HypnoticPattern].Active)
                 nameDesc += " (hypnotized)";
+
+            if (ActiveEffects[SpellEffectType.SynapticStatic].Active)
+                nameDesc += " (static)";
+
+            if (ActiveEffects[SpellEffectType.ConqueringPresense].Active)
+                nameDesc += " (fear)";
 
             return nameDesc;
         }
@@ -434,6 +468,11 @@ namespace RegressionTest
                 return TakeDamage(Dice.D6(3));
             }
 
+            if (ActiveEffects[SpellEffectType.ConqueringPresense].Active)
+            {
+                return TakeDamage(4);
+            }
+
             return true;
         }
 
@@ -450,7 +489,7 @@ namespace RegressionTest
             {
                 SpellEffect effect = kvp.Value;
 
-                if ((effect.Type == SpellEffectType.Bane || effect.Type == SpellEffectType.SynapticStatic || effect.Type == SpellEffectType.BlackTentacles) && effect.Active)
+                if (effect.SaveAtEndOfRound && effect.Active)
                 {
                     if (SavingThrow(effect.Ability, effect.DC))
                     {

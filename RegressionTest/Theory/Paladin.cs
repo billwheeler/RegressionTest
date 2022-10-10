@@ -188,7 +188,7 @@ namespace RegressionTest
             Group = Team.TeamOne;
             Healer = false;
             Priority = HealPriority.Medium;
-            InitMod = 4;
+            InitMod = 0;
             WarCaster = true;
             MyType = CreatureType.PC;
             ShouldUseSmites = true;
