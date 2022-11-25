@@ -8,20 +8,110 @@ namespace RegressionTest
 {
     public class Fighter : BaseCharacter
     {
+        public bool GiantsMightRunning { get; set; }
         public bool UsedGiantsMight { get; set; }
-
-        public bool ShouldRadiantSoul { get; set; } = true;
-        public bool RadiantSoulRunning { get; set; }
-        public bool RadiantSoulUsed { get; set; }
 
         public bool UsedActionSurge { get; set; } = false;
         public bool UsedSecondWind { get; set; } = false;
+
+        public class OversizedMaul : BaseAction
+        {
+            public Fighter parent { get; set; }
+
+            private string _desc = "Oversized Maul";
+            private bool _gmThisTurn = false;
+            private bool _gwmThisTurn = false;
+            private readonly bool GreatWeaponMasterEnabled = true;
+
+            public override void PreHit(BaseCharacter attacker, BaseCharacter target)
+            {
+                _gwmThisTurn = false;
+
+                base.PreHit(attacker, target);
+
+                if (GreatWeaponMasterEnabled)
+                {
+                    if (ShouldPowerAttack(target.AC, 14, 18))
+                    {
+                        _gwmThisTurn = true;
+                        AttackModifier = 4;
+                        parent.Stats.PowerAttacks++;
+                    }
+                    else
+                    {
+                        _gwmThisTurn = false;
+                        AttackModifier = 9;
+                    }
+                }
+                else
+                {
+                    _gwmThisTurn = false;
+                    AttackModifier = 9;
+                }
+            }
+
+            public override string Desc
+            {
+                get
+                {
+                    string output = _desc;
+
+                    if (_gwmThisTurn)
+                        output += " (GWM)";
+
+                    if (_gmThisTurn)
+                    {
+                        output += " (GM)";
+                        _gmThisTurn = false;
+                    }
+
+                    return output;
+                }
+                set { _desc = value; }
+            }
+
+            public OversizedMaul()
+            {
+                Desc = "Oversized Maul";
+                Type = ActionType.MeleeAttack;
+                AttackModifier = 9;
+                Modifier = 5;
+                TotalToRun = 2;
+                IsMagical = true;
+            }
+
+            public override bool Hits(BaseCharacter attacker, BaseCharacter target)
+            {
+                bool result = base.Hits(attacker, target);
+
+                return result;
+            }
+
+            public override int Amount()
+            {
+                int damage = Dice.D6(CriticalHit ? 8 : 4);
+
+                if (_gwmThisTurn)
+                {
+                    damage += 10;
+                    _gwmThisTurn = false;
+                }
+
+                if (!parent.UsedGiantsMight)
+                {
+                    parent.UsedGiantsMight = true;
+                    _gmThisTurn = true;
+                    damage += Dice.D6(CriticalHit ? 2 : 1);
+                }
+
+                return damage + Modifier;
+            }
+        }
 
         public class Warhammer : BaseAction
         {
             private string _desc = "Warhammer";
             private bool _gmThisTurn = false;
-            private bool _rsThisTurn = false;
 
             public Fighter parent { get; set; }
 
@@ -37,12 +127,6 @@ namespace RegressionTest
                         _gmThisTurn = false;
                     }
 
-                    if (_rsThisTurn)
-                    {
-                        output += " (RS)";
-                        _rsThisTurn = false;
-                    }
-
                     return output;
                 }
                 set { _desc = value; }
@@ -54,7 +138,7 @@ namespace RegressionTest
                 Type = ActionType.MeleeAttack;
                 Time = ActionTime.Action;
                 AttackModifier = 9;
-                Modifier = 7;
+                Modifier = 5;
                 IsMagical = true;
             }
 
@@ -69,77 +153,17 @@ namespace RegressionTest
                     damage += Dice.D6(CriticalHit ? 2 : 1);
                 }
 
-                if (parent.RadiantSoulRunning && !parent.RadiantSoulUsed)
-                {
-                    parent.RadiantSoulUsed = true;
-                    _rsThisTurn = true;
-                    damage += 4;
-                }
-
                 return damage + Modifier;
             }
         }
 
-        public class ShieldBash : BaseAction
+        public class GiantsMightActivate : BaseAction
         {
-            private string _desc = "Shield Bash";
-            private bool _gmThisTurn = false;
-            private bool _rsThisTurn = false;
-
-            public Fighter parent { get; set; }
-
-            public override string Desc
+            public GiantsMightActivate()
             {
-                get
-                {
-                    string output = _desc;
-
-                    if (_gmThisTurn)
-                    {
-                        output += " (GM)";
-                        _gmThisTurn = false;
-                    }
-
-                    if (_rsThisTurn)
-                    {
-                        output += " (RS)";
-                        _rsThisTurn = false;
-                    }
-
-                    return output;
-                }
-                set { _desc = value; }
-            }
-
-            public ShieldBash()
-            {
-                Desc = "Shield Bash";
-                Type = ActionType.MeleeAttack;
-                Time = ActionTime.Action;
-                AttackModifier = 9;
-                Modifier = 7;
-                IsMagical = true;
-            }
-
-            public override int Amount()
-            {
-                int damage = Dice.D4(CriticalHit ? 2 : 1);
-
-                if (!parent.UsedGiantsMight)
-                {
-                    parent.UsedGiantsMight = true;
-                    _gmThisTurn = true;
-                    damage += Dice.D6(CriticalHit ? 2 : 1);
-                }
-
-                if (parent.RadiantSoulRunning && !parent.RadiantSoulUsed)
-                {
-                    parent.RadiantSoulUsed = true;
-                    _rsThisTurn = true;
-                    damage += 4;
-                }
-
-                return damage + Modifier;
+                Desc = "Giant's Might";
+                Type = ActionType.Activate;
+                Time = ActionTime.BonusAction;
             }
         }
 
@@ -151,26 +175,21 @@ namespace RegressionTest
                 Type = ActionType.Activate;
                 Time = ActionTime.BonusAction;
             }
-
-            public override int Amount()
-            {
-                return 0;
-            }
         }
 
         public Fighter() : base()
         {
             Name = "Fighter";
-            AC = 20;
+            AC = 19;
             Health = 85;
             MaxHealth = 85;
-            HealingThreshold = 18;
+            HealingThreshold = 24;
             Group = Team.TeamOne;
             Healer = false;
             Priority = HealPriority.Medium;
             InitMod = 0;
             MyType = CreatureType.PC;
-            OpportunityAttackChance = 10;
+            OpportunityAttackChance = 20;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 20, Mod = 5, Save = 9 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 10, Mod = 0, Save = 0 });
@@ -180,22 +199,37 @@ namespace RegressionTest
             Abilities.Add(AbilityScore.Charisma, new Stat { Score = 10, Mod = 0, Save = 0 });
         }
 
+        public override int AC
+        {
+            get
+            {
+                if (GiantsMightRunning)
+                    return 19;
+
+                return 21;
+            }
+        }
+
         public override void Init()
         {
             base.Init();
+            GiantsMightRunning = false;
             UsedGiantsMight = false;
             UsedActionSurge = false;
             UsedSecondWind = false;
-            RadiantSoulRunning = false;
-            RadiantSoulUsed = false;
         }
 
         public override void OnNewTurn()
         {
             base.OnNewTurn();
-
-            UsedGiantsMight = false;
-            RadiantSoulUsed = false;
+            if (!GiantsMightRunning)
+            {
+                BonusActionFirst = true;
+            }
+            else
+            {
+                BonusActionFirst = false;
+            }
         }
 
         public override BaseAction PickAction()
@@ -203,22 +237,24 @@ namespace RegressionTest
             int total = 2;
             if (!UsedActionSurge)
             {
-                if (ShouldRadiantSoul)
-                {
-                    RadiantSoulRunning = true;
-                }
-                else
-                {
-                    total = 4;
-                }
+                total = 4;
                 UsedActionSurge = true;
             }
+
+            if (GiantsMightRunning)
+                return new OversizedMaul { Time = BaseAction.ActionTime.Action, TotalToRun = total, parent = this };
 
             return new Warhammer { Time = BaseAction.ActionTime.Action, TotalToRun = total, parent = this };
         }
 
         public override BaseAction PickBonusAction()
         {
+            if (!GiantsMightRunning)
+            {
+                GiantsMightRunning = true;
+                return new GiantsMightActivate();
+            }
+
             if (!UsedSecondWind && Health <= HealingThreshold)
             {
                 UsedSecondWind = true;
@@ -226,21 +262,24 @@ namespace RegressionTest
                 Heal(amount);
             }
 
-            return new ShieldBash { Time = BaseAction.ActionTime.BonusAction, TotalToRun = 1, parent = this };
+            return new NoAction { Time = BaseAction.ActionTime.BonusAction };
         }
 
         public override BaseAction PickReaction(bool opportunityAttack)
         {
             Stats.OpportunityAttacks++;
 
+            if (GiantsMightRunning)
+                return new OversizedMaul { Time = BaseAction.ActionTime.Action, TotalToRun = 1, parent = this };
+
             return new Warhammer { Time = BaseAction.ActionTime.Reaction, TotalToRun = 1, parent = this };
         }
 
         public override void OnDeath()
         {
-            RadiantSoulRunning = false;
-
             base.OnDeath();
+
+            GiantsMightRunning = false;
         }
     }
 }

@@ -15,7 +15,22 @@ namespace RegressionTest
         HypnoticPattern,
         Inspired,
         BlackTentacles,
-        ConqueringPresense
+        ConqueringPresense,
+        Bladesong,
+        Turned,
+        Stunned,
+        PsychicLance,
+        MindWhip,
+        Confusion,
+        PhantasmalKiller
+    }
+
+    public enum SpellEffectSave
+    {
+        Never,
+        Once,
+        EachRound,
+        EndsAfterOneRound
     }
 
     public class SpellEffect
@@ -24,7 +39,9 @@ namespace RegressionTest
         public int DC { get; set; }
         public AbilityScore Ability { get; set; }
         public SpellEffectType Type { get; set; }
-        public bool SaveAtEndOfRound { get; set; } = false;
+        public SpellEffectSave SaveType { get; set; }
         public bool Active { get; set; } = false;
+        public BaseAction NewRoundAction { get; set; } = null;
+        public BaseCharacter Owner { get; set; } = null;
     }
 }

@@ -33,6 +33,8 @@ namespace RegressionTest
         public AbilityScore Ability { get; set; } = AbilityScore.Wisdom;
         public int DC { get; set; } = 10;
 
+        public BaseAction ApplyEffectAfter { get; set; } = null;
+
         public SpellEffect EffectToApply { get; set; } = null;
 
         public bool IsMagical { get; set; } = false;
@@ -49,7 +51,8 @@ namespace RegressionTest
             RangedAttack,
             SpellAttack,
             SpellSave,
-            Apply
+            Apply,
+            NewRound
         }
 
         public ActionType Type { get; set; } = ActionType.MeleeAttack;
@@ -95,7 +98,7 @@ namespace RegressionTest
                     hits = true;
                     if (EffectToApply != null)
                     {
-                        target.ApplyEffect(EffectToApply);
+                        target.ApplyEffect(EffectToApply, attacker);
                     }
 
                     Result = DamageAmount.None;
@@ -105,7 +108,7 @@ namespace RegressionTest
                     hits = !target.SavingThrow(Ability, DC);
                     if (hits && EffectToApply != null)
                     {
-                        target.ApplyEffect(EffectToApply);
+                        target.ApplyEffect(EffectToApply, attacker);
                     }
 
                     if (HalfDamageOnMiss)
@@ -185,6 +188,33 @@ namespace RegressionTest
                 }
             }
 
+            if (target.ActiveEffects[SpellEffectType.Stunned].Active)
+            {
+                switch (abilityRoll)
+                {
+                    case AbilityRoll.Disadvantage:
+                        abilityRoll = AbilityRoll.Normal;
+                        break;
+                    default:
+                        abilityRoll = attacker.HasElvenAccuracy ? AbilityRoll.ElvenAccuracy : AbilityRoll.Advantage;
+                        break;
+                }
+            }
+
+            if (attacker.IsHidden)
+            {
+                switch (abilityRoll)
+                {
+                    case AbilityRoll.Disadvantage:
+                        abilityRoll = AbilityRoll.Normal;
+                        break;
+                    default:
+                        abilityRoll = attacker.HasElvenAccuracy ? AbilityRoll.ElvenAccuracy : AbilityRoll.Advantage;
+                        break;
+                }
+            }
+
+
             int mod = AttackModifier;
             int roll = Dice.MakeAbilityRoll(abilityRoll);
 
@@ -226,6 +256,12 @@ namespace RegressionTest
             int armorClass = target.AC;
             if (target.HasShieldRunning)
                 armorClass += 5;
+
+            if (target.HasReactionSave)
+            {
+                armorClass += Dice.D6();
+                target.HasReactionSave = false;
+            }
 
             var result = (roll + mod) >= armorClass ? true : false;
 
@@ -274,30 +310,24 @@ namespace RegressionTest
                     upperBound -= 5;
                     break;
             }
-            
-            // too high, don't bother
-            if (targetAC >= upperBound)
+
+            if (targetAC >= lowerBound && targetAC <= upperBound)
             {
-                // did we crit at any point? then screw it and go for it
-                if (HasCritted)
+                // we're in the questionable range, play it safe for the first attack
+                if (CurrentRunning == 1)
+                    return false;
+
+                // if we had at least one hit, go for it
+                if (CurrentRunning >= 2 && CurrentHits >= 1)
                     return true;
 
                 return false;
             }
 
-            // too low, always use
-            else if (targetAC >= lowerBound)
+            if (targetAC < lowerBound)
             {
                 return true;
             }
-
-            // we're in the questionable range, first attack try for it
-            if (CurrentRunning == 1)
-                return true;
-
-            // if we had at least one hit, go for it
-            if (CurrentRunning >= 2 && CurrentHits >= 1)
-                return true;
 
             return false;
         }
@@ -403,6 +433,26 @@ namespace RegressionTest
         }
     }
 
+    public class RunsAwayAction : SpellAction
+    {
+        public RunsAwayAction()
+        {
+            Desc = "Runs Away";
+            Level = SpellLevel.One;
+            Type = ActionType.Activate;
+        }
+    }
+
+    public class NothingAction : SpellAction
+    {
+        public NothingAction()
+        {
+            Desc = "Nothing";
+            Level = SpellLevel.One;
+            Type = ActionType.Activate;
+        }
+    }
+
     public class SynapticStatic : BaseAction
     {
         public SynapticStatic(int dc = 17)
@@ -431,6 +481,52 @@ namespace RegressionTest
         }
     }
 
+    public class PhantasmalKiller : BaseAction
+    {
+        public PhantasmalKiller(BaseCharacter owner, int dc = 17)
+        {
+            Desc = "Phantasmal Killer";
+            Type = ActionType.SpellSave;
+            Time = ActionTime.Action;
+            Ability = AbilityScore.Wisdom;
+            HalfDamageOnMiss = false;
+            MinTargets = 1;
+            MaxTargets = 1;
+            DC = dc;
+
+            EffectToApply = new SpellEffect
+            {
+                Ability = AbilityScore.Wisdom,
+                DC = dc,
+                Name = "Phantasmal Killer",
+                Type = SpellEffectType.PhantasmalKiller,
+                SaveType = SpellEffectSave.EachRound,
+                NewRoundAction = new PhantasmalKillerApply(),
+                Owner = owner
+            };
+        }
+
+        public override int Amount()
+        {
+            return Dice.D10(4);
+        }
+    }
+
+    public class PhantasmalKillerApply : BaseAction
+    {
+        public PhantasmalKillerApply()
+        {
+            Desc = "Phantasmal Killer";
+            Type = ActionType.NewRound;
+            IsMagical = true;
+        }
+
+        public override int Amount()
+        {
+            return Dice.D10(4);
+        }
+    }
+
     public class ScorchingRay : BaseAction
     {
         public ScorchingRay(int attackMod = 0)
@@ -448,6 +544,89 @@ namespace RegressionTest
         {
             int damage = Dice.D6(CriticalHit ? 4 : 2);
             return damage + Modifier;
+        }
+    }
+
+    public class MindWhip : BaseAction
+    {
+        public MindWhip(int dc = 17)
+        {
+            Desc = "Mind Whip";
+            Type = ActionType.SpellSave;
+            Time = ActionTime.Action;
+            Ability = AbilityScore.Intelligence;
+            HalfDamageOnMiss = true;
+            Damageless = false;
+            MinTargets = 1;
+            MaxTargets = 1;
+            DC = dc;
+
+            EffectToApply = new SpellEffect
+            {
+                Ability = AbilityScore.Intelligence,
+                DC = dc,
+                Name = "Mind Whip",
+                Type = SpellEffectType.MindWhip,
+                SaveType = SpellEffectSave.EndsAfterOneRound
+            };
+        }
+
+        public override int Amount()
+        {
+            return Dice.D6(3);
+        }
+    }
+
+    public class PsychicLance : BaseAction
+    {
+        public PsychicLance(int dc = 17)
+        {
+            Desc = "Psychic Lance";
+            Type = ActionType.SpellSave;
+            Time = ActionTime.Action;
+            Ability = AbilityScore.Intelligence;
+            HalfDamageOnMiss = true;
+            Damageless = false;
+            MinTargets = 1;
+            MaxTargets = 1;
+            DC = dc;
+
+            EffectToApply = new SpellEffect
+            {
+                Ability = AbilityScore.Intelligence,
+                DC = dc,
+                Name = "Psychic Lance",
+                Type = SpellEffectType.PsychicLance,
+                SaveType = SpellEffectSave.EndsAfterOneRound
+            };
+        }
+
+        public override int Amount()
+        {
+            return Dice.D6(7);
+        }
+    }
+
+    public class Confusion : BaseAction
+    {
+        public Confusion(int dc = 17)
+        {
+            Desc = "Confusion";
+            Type = ActionType.SpellSave;
+            Time = ActionTime.Action;
+            Ability = AbilityScore.Wisdom;
+            Damageless = true;
+            MinTargets = 2;
+            MaxTargets = 4;
+            DC = dc;
+
+            EffectToApply = new SpellEffect
+            {
+                Ability = AbilityScore.Wisdom,
+                DC = dc,
+                Name = "Confusion",
+                Type = SpellEffectType.Confusion
+            };
         }
     }
 
@@ -476,7 +655,7 @@ namespace RegressionTest
 
     public class BlackTentacles : BaseAction
     {
-        public BlackTentacles(int dc = 17)
+        public BlackTentacles(BaseCharacter owner, int dc = 17)
         {
             Desc = "Black Tentacles";
             Type = ActionType.SpellSave;
@@ -492,8 +671,26 @@ namespace RegressionTest
                 Ability = AbilityScore.Wisdom,
                 DC = dc,
                 Name = "Black Tentacles",
-                Type = SpellEffectType.BlackTentacles
+                Type = SpellEffectType.BlackTentacles,
+                SaveType = SpellEffectSave.EachRound,
+                NewRoundAction = new BlackTentaclesApply(),
+                Owner = owner
             };
+        }
+
+        public override int Amount()
+        {
+            return Dice.D6(3);
+        }
+    }
+
+    public class BlackTentaclesApply : BaseAction
+    {
+        public BlackTentaclesApply()
+        {
+            Desc = "Black Tentacles";
+            Type = ActionType.NewRound;
+            IsMagical = true;
         }
 
         public override int Amount()

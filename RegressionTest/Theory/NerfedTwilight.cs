@@ -9,9 +9,12 @@ namespace RegressionTest
     public class NerfedTwilight : BaseCharacter
     {
         public bool SpiritGuardiansRunning { get; set; }
-        public bool TwilightSanctuaryRunning { get; set; }
+        public bool SpiritualWeaponRunning { get; set; }
+        public bool CanTurn { get; set; } = false;
+        public bool UsedChannelDivinity { get; set; } = false;
+        public bool CastLevelledSpellThisTurn { get; set; } = false;
 
-        public bool ShouldBoomBoom { get; set; } = false;
+        public bool ShouldBoomBoom { get; set; } = true;
 
         public class TollOfTheDead : BaseAction
         {
@@ -22,6 +25,7 @@ namespace RegressionTest
                 Time = ActionTime.Action;
                 Ability = AbilityScore.Wisdom;
                 DC = 16;
+                IsMagical = true;
             }
 
             public override int Amount()
@@ -41,6 +45,7 @@ namespace RegressionTest
                 Time = ActionTime.Action;
                 AttackModifier = 7;
                 Modifier = 3;
+                IsMagical = true;
             }
 
             public override int Amount()
@@ -63,6 +68,30 @@ namespace RegressionTest
             }
         }
 
+        public class TurnUndead : BaseAction
+        {
+            public TurnUndead()
+            {
+                Desc = "Turn Undead";
+                Type = ActionType.SpellSave;
+                Time = ActionTime.Action;
+                Ability = AbilityScore.Wisdom;
+                Damageless = true;
+                MinTargets = 2;
+                MaxTargets = 6;
+                DC = 16;
+                IsMagical = true;
+
+                EffectToApply = new SpellEffect
+                {
+                    Ability = AbilityScore.Wisdom,
+                    DC = 15,
+                    Name = "Turn Undead",
+                    Type = SpellEffectType.Turned
+                };
+            }
+        }
+
         public class SpiritualWeapon : BaseAction
         {
             public SpiritualWeapon()
@@ -72,6 +101,7 @@ namespace RegressionTest
                 Time = ActionTime.BonusAction;
                 AttackModifier = 8;
                 Modifier = 4;
+                IsMagical = true;
             }
 
             public override int Amount()
@@ -105,6 +135,7 @@ namespace RegressionTest
                 HalfDamageOnMiss = true;
                 Ability = AbilityScore.Wisdom;
                 DC = 16;
+                IsMagical = true;
             }
 
             public override int Amount()
@@ -147,8 +178,6 @@ namespace RegressionTest
             Priority = HealPriority.High;
             PreTurnNotify = true;
             PostTurnNotify = true;
-            TwilightSanctuaryRunning = false;
-            SpiritGuardiansRunning = false;
             WarCaster = true;
             HasAdvantageOnInitiative = true;
             MyType = CreatureType.PC;
@@ -166,23 +195,40 @@ namespace RegressionTest
         {
             base.Init();
             SpiritGuardiansRunning = false;
-            TwilightSanctuaryRunning = false;
+            SpiritualWeaponRunning = false;
+            UsedChannelDivinity = false;
+        }
+
+        public override void OnNewTurn()
+        {
+            base.OnNewTurn();
+
+            CastLevelledSpellThisTurn = false;
         }
 
         public override BaseAction PickAction()
         {
-            if (Healer && !TwilightSanctuaryRunning)
-            {
-                TwilightSanctuaryRunning = true;
-                Context.GiveTempHP(Group, this, Dice.D6() + 9);
-                return new TwilightSanctuaryActivate();
-            }
-
             if (!SpiritGuardiansRunning)
             {
                 SpiritGuardiansRunning = true;
                 Concentrating = true;
+                Stats.SpellsUsed++;
+                CastLevelledSpellThisTurn = true;
                 return new SpiritGuardiansActivate();
+            }
+
+            if (!UsedChannelDivinity)
+            {
+                if (CanTurn)
+                {
+                    return new TurnUndead();
+                }
+                else
+                {
+                    UsedChannelDivinity = true;
+                    Context.GiveTempHP(Group, this, Dice.D6() + 9);
+                    return new TwilightSanctuaryActivate();
+                }
             }
 
             int rando = Dice.D100();
@@ -215,12 +261,21 @@ namespace RegressionTest
 
         public override BaseAction PickBonusAction()
         {
+            if (!CastLevelledSpellThisTurn && !SpiritualWeaponRunning)
+            {
+                SpiritualWeaponRunning = true;
+                Stats.SpellsUsed++;
+                CastLevelledSpellThisTurn = true;
+                return new SpiritualWeapon();
+            }
+
             if (Healer && HealTarget != null)
             {
+                Stats.SpellsUsed++;
                 return new HealingWord { Modifier = 4, Level = SpellAction.SpellLevel.One };
             }
 
-            if (Dice.D100() <= 90)
+            if (SpiritualWeaponRunning && Dice.D100() <= 90)
             {
                 return new SpiritualWeapon();
             }
@@ -237,7 +292,7 @@ namespace RegressionTest
 
         public override BaseAction PickPreTurn(BaseCharacter target)
         {
-            if (!target.Incapacitated)
+            if (!target.HasUndesirableEffect())
             {
                 if (SpiritGuardiansRunning)
                 {
@@ -254,25 +309,25 @@ namespace RegressionTest
             switch (Context.GetLivingEnemyCount(Group, false))
             {
                 case 1:
-                    return 70;
+                    return 90;
                 case 2:
-                    return 63;
+                    return 81;
                 case 3:
-                    return 56;
+                    return 72;
                 case 4:
-                    return 49;
+                    return 63;
                 case 5:
-                    return 42;
+                    return 54;
                 case 6:
-                    return 35;
+                    return 45;
                 case 7:
-                    return 28;
+                    return 36;
                 case 8:
-                    return 21;
+                    return 27;
                 case 9:
-                    return 14;
+                    return 18;
                 case 10:
-                    return 7;
+                    return 9;
                 default:
                     return 3;
             }
@@ -290,7 +345,7 @@ namespace RegressionTest
             base.OnDeath();
 
             SpiritGuardiansRunning = false;
-            TwilightSanctuaryRunning = false;
+            SpiritualWeaponRunning = false;
         }
     }
 }

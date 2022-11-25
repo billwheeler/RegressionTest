@@ -35,6 +35,8 @@ namespace RegressionTest
             Priority = HealPriority.Dont;
             InitMod = 4;
             MyType = CreatureType.Summon;
+            Value = TargetPriority.Lowest;
+            IsObject = true;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 4, Mod = -3, Save = -3 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 18, Mod = 4, Save = 4 });

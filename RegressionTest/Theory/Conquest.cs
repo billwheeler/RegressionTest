@@ -6,67 +6,30 @@ using System.Threading.Tasks;
 
 namespace RegressionTest
 {
-    public class Paladin : BaseCharacter
+    public class Conquest : BaseCharacter
     {
-        public class Warhammer : PaladinBaseWeapon
+        public class RevenantBlade : AmxikasBaseWeapon
         {
-            public Warhammer()
+            public RevenantBlade()
             {
-                Desc = "Warhammer";
-                AttackModifier = 9;
-                Modifier = 7;
-                IsMagical = true;
-            }
-
-            public override int Amount()
-            {
-                int damage = Dice.D8(CriticalHit ? 2 : 1);
-                damage += TallyBuffs();
-                return damage + Modifier;
-            }
-        }
-
-        public class ShieldBash : PaladinBaseWeapon
-        {
-            public ShieldBash()
-            {
-                Desc = "Shield Bash";
-                AttackModifier = 9;
-                Modifier = 5;
-                IsMagical = true;
-            }
-
-            public override int Amount()
-            {
-                int damage = Dice.D4(CriticalHit ? 2 : 1);
-                damage += TallyBuffs();
-                return damage + Modifier;
-            }
-        }
-
-        public class Spear : PaladinBaseWeapon
-        {
-            public Spear()
-            {
-                Desc = "Spear";
-                AttackModifier = 9;
-                Modifier = 7;
-                IsMagical = true;
+                Desc = "Revenant Blade";
             }
 
             public override int Amount()
             {
                 int damage = (Time != ActionTime.BonusAction) ?
-                    Dice.D6(CriticalHit ? 2 : 1) :
+                    Dice.D4(CriticalHit ? 4 : 2) :
                     Dice.D4(CriticalHit ? 2 : 1);
+
                 damage += TallyBuffs();
+
                 return damage + Modifier;
             }
         }
 
-        public abstract class PaladinBaseWeapon : BaseAction
+        public abstract class AmxikasBaseWeapon : BaseAction
         {
-            public Paladin parent { get; set; }
+            public Conquest parent { get; set; }
 
             private string _desc = string.Empty;
             private bool _smitedThisTurn = false;
@@ -74,8 +37,6 @@ namespace RegressionTest
             // some heuristics for smiting
             private bool enemyIsUndead = false;
             private bool enemyIsFiend = false;
-            private bool enemyIsHVT = false;
-            private bool enemyAtLowHealth = false;
 
             public override string Desc
             {
@@ -94,7 +55,7 @@ namespace RegressionTest
                 set { _desc = value; }
             }
 
-            public PaladinBaseWeapon()
+            public AmxikasBaseWeapon()
             {
                 Type = ActionType.MeleeAttack;
                 AttackModifier = 9;
@@ -106,10 +67,8 @@ namespace RegressionTest
             {
                 base.PreHit(attacker, target);
 
-                enemyIsHVT = target.HighValueTarget;
                 enemyIsUndead = target.IsUndead;
                 enemyIsFiend = target.IsFiend;
-                enemyAtLowHealth = target.Health <= 15;
             }
 
             public int TallyBuffs()
@@ -121,13 +80,11 @@ namespace RegressionTest
                     damage += Dice.D8(CriticalHit ? 2 : 1);
                 }
 
-                if (parent.ShouldUseSmites && !enemyAtLowHealth)
+                if (parent.ShouldUseSmites)
                 {
                     int percentToSmite = 5;
 
-                    if (enemyIsHVT)
-                        percentToSmite = 40;
-                    else if (enemyIsUndead)
+                    if (enemyIsUndead)
                         percentToSmite = 20;
                     else if (enemyIsFiend)
                         percentToSmite = 20;
@@ -173,7 +130,7 @@ namespace RegressionTest
 
         public class LayOnHands : SpellAction
         {
-            public Paladin parent { get; set; }
+            public Conquest parent { get; set; }
 
             public LayOnHands()
             {
@@ -185,10 +142,50 @@ namespace RegressionTest
 
             public override int Amount()
             {
-                int amount = 45;
-                if (parent.LayOnHandsPool < 45)
+                int amount = 20;
+                if (parent.LayOnHandsPool < 20)
                     amount = parent.LayOnHandsPool;
                 return amount;
+            }
+        }
+
+        public class ConqueringPresenseApply : BaseAction
+        {
+            public ConqueringPresenseApply()
+            {
+                Desc = "Conquering Presense";
+                Type = ActionType.NewRound;
+                IsMagical = true;
+            }
+
+            public override int Amount()
+            {
+                return 4;
+            }
+        }
+
+        public class ConqueringPresense : BaseAction
+        {
+            public ConqueringPresense(BaseCharacter owner)
+            {
+                Desc = "Conquering Presense";
+                Type = ActionType.SpellSave;
+                Time = ActionTime.Action;
+                Ability = AbilityScore.Wisdom;
+                Damageless = true;
+                MinTargets = 3;
+                MaxTargets = 8;
+                DC = 16;
+
+                EffectToApply = new SpellEffect
+                {
+                    Ability = AbilityScore.Wisdom,
+                    DC = 16,
+                    Name = "Conquering Presense",
+                    Type = SpellEffectType.ConqueringPresense,
+                    NewRoundAction = new ConqueringPresenseApply(),
+                    Owner = owner
+                };
             }
         }
 
@@ -207,91 +204,46 @@ namespace RegressionTest
             }
         }
 
-        public class TurnTheUnholy : BaseAction
-        {
-            public TurnTheUnholy()
-            {
-                Desc = "Turn the Unholy";
-                Type = ActionType.SpellSave;
-                Time = ActionTime.Action;
-                Ability = AbilityScore.Wisdom;
-                Damageless = true;
-                MinTargets = 2;
-                MaxTargets = 6;
-                DC = 15;
+        public bool CanConqueringPresense { get; set; } = false;
+        public bool UsedChannelDivinity { get; set; } = false;
+        public bool ConqueringPresenseRunning { get; set; } = false;
 
-                EffectToApply = new SpellEffect
-                {
-                    Ability = AbilityScore.Wisdom,
-                    DC = 15,
-                    Name = "Turn the Unholy",
-                    Type = SpellEffectType.Turned
-                };
-            }
-        }
-
-        public class AbjureTheExtraplanar : BaseAction
-        {
-            public AbjureTheExtraplanar()
-            {
-                Desc = "Abjure the Extraplanar";
-                Type = ActionType.SpellSave;
-                Time = ActionTime.Action;
-                Ability = AbilityScore.Wisdom;
-                Damageless = true;
-                MinTargets = 2;
-                MaxTargets = 6;
-                DC = 15;
-
-                EffectToApply = new SpellEffect
-                {
-                    Ability = AbilityScore.Wisdom,
-                    DC = 15,
-                    Name = "Abjure the Extraplanar",
-                    Type = SpellEffectType.Turned
-                };
-            }
-        }
-
-        public bool IsWatchers { get; set; } = false;
-
-        public bool CanTurn { get; set; } = false;
-        public bool UsedTurn { get; set; } = false;
         public bool CanSpiritShroud { get; set; } = false;
         public bool SpiritShroudRunning { get; set; } = false;
+
         public bool ShouldUseSmites { get; set; } = false;
         public int LayOnHandsPool { get; set; } = 45;
 
-        public Paladin() : base()
+        public Conquest() : base()
         {
-            Name = "Murie";
-            AC = 20;
-            Health = 85;
-            MaxHealth = 85;
-            HealingThreshold = 24;
+            Name = "Amxikas";
+            AC = 18;
+            Health = 76;
+            MaxHealth = 76;
+            HealingThreshold = 18;
             Group = Team.TeamOne;
             Healer = true;
             Priority = HealPriority.Medium;
-            InitMod = 0;
+            InitMod = 5;
             WarCaster = false;
             MyType = CreatureType.PC;
-            OpportunityAttackChance = 60;
+            OpportunityAttackChance = 20;
 
-            Abilities.Add(AbilityScore.Strength, new Stat { Score = 20, Mod = 5, Save = 8 });
-            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 10, Mod = 0, Save = 3 });
-            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 14, Mod = 2, Save = 5 });
+            Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 3 });
+            Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 18, Mod = 4, Save = 7 });
+            Abilities.Add(AbilityScore.Constitution, new Stat { Score = 14, Mod = 2, Save = 9 });
             Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 8, Mod = -1, Save = 2 });
             Abilities.Add(AbilityScore.Wisdom, new Stat { Score = 10, Mod = 0, Save = 7 });
-            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 16, Mod = 3, Save = 10 });
+            Abilities.Add(AbilityScore.Charisma, new Stat { Score = 18, Mod = 4, Save = 11 });
         }
 
         public override void Init()
         {
             base.Init();
-            SpiritShroudRunning = false;
-            LayOnHandsPool = 45;
             ShouldUseSmites = true;
-            UsedTurn = false;
+            SpiritShroudRunning = false;
+            UsedChannelDivinity = false;
+            ConqueringPresenseRunning = false;
         }
 
         public override BaseAction PickAction()
@@ -301,17 +253,15 @@ namespace RegressionTest
                 return new LayOnHands { parent = this };
             }
 
-            if (CanTurn && !UsedTurn)
+            if (CanConqueringPresense && !UsedChannelDivinity && !ConqueringPresenseRunning)
             {
-                UsedTurn = true;
+                UsedChannelDivinity = true;
+                ConqueringPresenseRunning = true;
 
-                if (IsWatchers)
-                    return new AbjureTheExtraplanar();
-
-                return new TurnTheUnholy();
+                return new ConqueringPresense(this);
             }
 
-            return new Spear { Time = BaseAction.ActionTime.Action, TotalToRun = 2, parent = this };
+            return new RevenantBlade { Time = BaseAction.ActionTime.Action, TotalToRun = 2, parent = this };
         }
 
         public override BaseAction PickBonusAction()
@@ -320,22 +270,22 @@ namespace RegressionTest
             {
                 SpiritShroudRunning = true;
                 Concentrating = true;
-                Stats.SpellsUsed++;
                 return new SpiritShroudActivate();
             }
 
-            return new Spear { Time = BaseAction.ActionTime.BonusAction, parent = this };
+            return new RevenantBlade { Time = BaseAction.ActionTime.BonusAction, TotalToRun = 1, parent = this };
         }
 
         public override BaseAction PickReaction(bool opportunityAttack)
         {
             Stats.OpportunityAttacks++;
-            return new Spear { Time = BaseAction.ActionTime.Reaction, TotalToRun = 1, parent = this };
+            return new RevenantBlade { Time = BaseAction.ActionTime.Reaction, TotalToRun = 1, parent = this };
         }
 
         public override void OnNewTurn()
         {
             base.OnNewTurn();
+
             if (CanSpiritShroud && !Concentrating && !SpiritShroudRunning)
             {
                 BonusActionFirst = true;
@@ -361,3 +311,4 @@ namespace RegressionTest
         }
     }
 }
+

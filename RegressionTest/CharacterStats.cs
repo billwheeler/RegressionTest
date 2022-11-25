@@ -21,6 +21,9 @@ namespace RegressionTest
         public int Smites { get; set; } = 0;
         public int OpportunityAttacks { get; set; } = 0;
         public int PowerAttacks { get; set; } = 0;
+        public int SpellsUsed { get; set; } = 0;
+        public int KiUsed { get; set; } = 0;
+        public int FeatureDiceUsed { get; set; } = 0;
 
         public float DPR
         {
@@ -83,6 +86,30 @@ namespace RegressionTest
             get
             {
                 return (float)PowerAttacks / (float)Attacks * 100.0f;
+            }
+        }
+
+        public float SpellsPerEncounter
+        {
+            get
+            {
+                return (float)SpellsUsed / (float)Encounters;
+            }
+        }
+
+        public float KiPerEncounter
+        {
+            get
+            {
+                return (float)KiUsed / (float)Encounters;
+            }
+        }
+
+        public float FeatureDicePerEncounter
+        {
+            get
+            {
+                return (float)FeatureDiceUsed / (float)Encounters;
             }
         }
     }

@@ -59,6 +59,7 @@ namespace RegressionTest
             Priority = HealPriority.Dont;
             InitMod = -1;
             MyType = CreatureType.Summon;
+            OpportunityAttackChance = 10;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 5, Mod = -3, Save = -3 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 11, Mod = 0, Save = 0 });
@@ -75,9 +76,15 @@ namespace RegressionTest
 
             return new Claws { Time = BaseAction.ActionTime.Action, TotalToRun = 1 };
         }
+
+        public override BaseAction PickReaction(bool opportunityAttack)
+        {
+            Stats.OpportunityAttacks++;
+
+            return new Claws { Time = BaseAction.ActionTime.Reaction, TotalToRun = 1 };
+        }
     }
-
-
+ 
     public class ArtElementalMascot : BaseCharacter
     {
         public bool ShepherdSummons { get; set; } = false;

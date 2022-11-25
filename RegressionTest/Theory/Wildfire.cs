@@ -10,8 +10,11 @@ namespace RegressionTest
     {
         public bool DidExtraDamage { get; set; } = false;
 
+        public bool ShouldConjure { get; set; } = true;
         public bool ConjureRunning { get; set; } = false;
         public bool ConjureUsed { get; set; } = false;
+
+        public bool ConfusionRunning { get; set; } = false;
 
         public bool WildfireSummoned { get; set; } = false;
         public bool WildfireSummonedThisTurn { get; set; } = false;
@@ -204,19 +207,18 @@ namespace RegressionTest
             DidExtraDamage = false;
             ConjureRunning = false;
             ConjureUsed = false;
+            ConfusionRunning = false;
             WildfireSummoned = false;
             WildfireSummonedThisTurn = false;
             ScorchingRayUses = 2;
         }
 
-        public override bool OnNewRound()
+        public override void OnNewRound()
         {
-            bool result = base.OnNewRound();
+            base.OnNewRound();
 
             DidExtraDamage = false;
             WildfireSummonedThisTurn = false;
-
-            return result;
         }
 
         public override void OnNewTurn()
@@ -226,14 +228,26 @@ namespace RegressionTest
 
         public override BaseAction PickAction()
         {
-            if (!ConjureUsed && !ConjureRunning)
+            if (ShouldConjure)
             {
-                ConjureRunning = true;
-                Concentrating = true;
-                ConjureUsed = true;
-                Context.ActivateSummons(Group);
+                if (!ConjureUsed && !ConjureRunning)
+                {
+                    ConjureRunning = true;
+                    Concentrating = true;
+                    ConjureUsed = true;
+                    Stats.SpellsUsed++;
+                    Context.ActivateSummons(Group);
 
-                return new ConjureWoodlandBeingsActivate();
+                    return new ConjureWoodlandBeingsActivate();
+                }
+            }
+            
+            if (!Concentrating && !ConfusionRunning)
+            {
+                ConfusionRunning = true;
+                Stats.SpellsUsed++;
+                Concentrating = true;
+                return new Confusion(16);
             }
 
             if (!WildfireSummoned)
@@ -246,6 +260,7 @@ namespace RegressionTest
             if (ScorchingRayUses > 0)
             {
                 ScorchingRayUses--;
+                Stats.SpellsUsed++;
                 return new ScorchingRayWildfire { parent = this, Time = BaseAction.ActionTime.Action };
             }
             
@@ -256,6 +271,7 @@ namespace RegressionTest
         {
             if (Healer && HealTarget != null)
             {
+                Stats.SpellsUsed++;
                 return new HealingWordWildfire { Modifier = 4, Level = SpellAction.SpellLevel.One };
             }
 
@@ -279,6 +295,12 @@ namespace RegressionTest
                 ConjureRunning = false;
                 Context.DeactivateSummons(Group);
             }
+
+            if (ConfusionRunning)
+            {
+                ConfusionRunning = false;
+                Context.EndEffect(Group, SpellEffectType.Confusion);
+            }
         }
 
         public override void OnDeath()
@@ -289,6 +311,12 @@ namespace RegressionTest
             {
                 ConjureRunning = false;
                 Context.DeactivateSummons(Group);
+            }
+
+            if (ConfusionRunning)
+            {
+                ConfusionRunning = false;
+                Context.EndEffect(Group, SpellEffectType.Confusion);
             }
         }
     }

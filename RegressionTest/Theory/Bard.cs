@@ -8,6 +8,8 @@ namespace RegressionTest
 {
     public class Bard : BaseCharacter
     {
+        public bool PhantasmalKillerRunning { get; set; } = false;
+
         public class Rapier : BaseAction
         {
             public readonly bool CanUseBoomingBlade = false;
@@ -56,9 +58,7 @@ namespace RegressionTest
 
             public override int Amount()
             {
-                int damage = Dice.D8(CriticalHit ? 4 : 2);
-
-                return damage + Modifier;
+                return Dice.D8(CriticalHit ? 4 : 2) + Modifier;
             }
         }
 
@@ -71,6 +71,7 @@ namespace RegressionTest
                 Time = ActionTime.BonusAction;
                 MinTargets = 1;
                 MaxTargets = 1;
+                Damageless = true;
 
                 EffectToApply = new SpellEffect
                 {
@@ -87,6 +88,7 @@ namespace RegressionTest
                 Desc = $"Inspiration, targets {target}";
                 Type = ActionType.Activate;
                 Time = ActionTime.BonusAction;
+                Damageless = true;
             }
 
             public override int Amount()
@@ -94,6 +96,24 @@ namespace RegressionTest
                 return 0;
             }
         }
+
+        public class AnimateObjectActivate : BaseAction
+        {
+            public AnimateObjectActivate()
+            {
+                Desc = "Animate Object";
+                Type = ActionType.Activate;
+                Time = ActionTime.Action;
+                Damageless = true;
+            }
+
+            public override int Amount()
+            {
+                return 0;
+            }
+        }
+
+        public bool ShouldPhantasmalKiller { get; set; } = false;
 
         public int ShieldUses { get; set; } = 0;
         public bool DidBigSpell { get; set; }
@@ -128,18 +148,13 @@ namespace RegressionTest
 
             DidBigSpell = false;
             HypnoticPatternRunning = false;
+            PhantasmalKillerRunning = false;
         }
 
         public override void OnNewEncounter()
         {
             base.OnNewEncounter();
             SetTempHitPoints(10);
-            ShieldUses = 4;
-        }
-
-        public override bool OnNewRound()
-        {
-            return base.OnNewRound();
         }
 
         public override void OnNewTurn()
@@ -160,18 +175,28 @@ namespace RegressionTest
         {
             if (!DidBigSpell)
             {
-                /*if (Context.AnyoneHaveEffect(Group, SpellEffectType.SynapticStatic))
+                if (ShouldPhantasmalKiller)
                 {
                     DidBigSpell = true;
+                    PhantasmalKillerRunning = true;
                     Concentrating = true;
-                    HypnoticPatternRunning = true;
-                    return new HypnoticPattern(16);
+                    Stats.SpellsUsed++;
+                    return new PhantasmalKiller(this, 16);
                 }
-                else*/
+                else
                 {
                     DidBigSpell = true;
+                    Stats.SpellsUsed++;
                     return new SynapticStatic(16);
                 }
+            }
+            
+            if (!Concentrating)
+            {
+                Concentrating = true;
+                HypnoticPatternRunning = true;
+                Stats.SpellsUsed++;
+                return new HypnoticPattern(16);
             }
 
             bool shouldDodge = false;
@@ -199,18 +224,19 @@ namespace RegressionTest
 
             if (Healer && HealTarget != null)
             {
+                Stats.SpellsUsed++;
                 return new HealingWord { Modifier = 4, Level = SpellAction.SpellLevel.One };
             }
 
-            BaseCharacter ally = Context.PickRandomTeammate(Group, ID);
+            BaseCharacter ally = Context.PickRandomTeammate(Group, ID, false);
             if (ally != null)
             {
                 ally.ApplyEffect(new SpellEffect
                 {
                     DC = 0,
                     Type = SpellEffectType.Inspired,
-                    Active = true
-                });
+                    Active = true,
+                }, this);
 
                 return new Inspiration(ally.Name) { Time = BaseAction.ActionTime.BonusAction };
             }
@@ -233,6 +259,12 @@ namespace RegressionTest
                 HypnoticPatternRunning = false;
                 Context.EndEffect(Group, SpellEffectType.HypnoticPattern);
             }
+
+            if (PhantasmalKillerRunning)
+            {
+                PhantasmalKillerRunning = false;
+                Context.EndEffect(Group, SpellEffectType.PhantasmalKiller);
+            }
         }
 
         public override void OnDeath()
@@ -243,6 +275,12 @@ namespace RegressionTest
             {
                 HypnoticPatternRunning = false;
                 Context.EndEffect(Group, SpellEffectType.HypnoticPattern);
+            }
+
+            if (PhantasmalKillerRunning)
+            {
+                PhantasmalKillerRunning = false;
+                Context.EndEffect(Group, SpellEffectType.PhantasmalKiller);
             }
         }
     }

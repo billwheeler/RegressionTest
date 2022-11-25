@@ -8,6 +8,25 @@ namespace RegressionTest
 {
     public class Amxikas : BaseCharacter
     {
+        public class Longsword : AmxikasBaseWeapon
+        {
+            public Longsword()
+            {
+                Desc = "Longsword";
+            }
+
+            public override int Amount()
+            {
+                int damage = (Time != ActionTime.BonusAction) ?
+                    Dice.D10(CriticalHit ? 2 : 1) :
+                    Dice.D4(CriticalHit ? 2 : 1);
+
+                damage += TallyBuffs();
+
+                return damage + Modifier;
+            }
+        }
+
         public class RevenantBlade : AmxikasBaseWeapon
         {
             public RevenantBlade()
@@ -210,14 +229,14 @@ namespace RegressionTest
             AC = 18;
             Health = 76;
             MaxHealth = 76;
-            HealingThreshold = 18;
+            HealingThreshold = 24;
             Group = Team.TeamOne;
-            Healer = true;
+            Healer = false;
             Priority = HealPriority.Medium;
             InitMod = 5;
             WarCaster = true;
             MyType = CreatureType.PC;
-            OpportunityAttackChance = 40;
+            OpportunityAttackChance = 60;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 10, Mod = 0, Save = 3 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 20, Mod = 5, Save = 8 });
@@ -264,6 +283,7 @@ namespace RegressionTest
 
             if (CanSpiritShroud && !Concentrating && !SpiritShroudRunning)
             {
+                Stats.SpellsUsed++;
                 SpiritShroudRunning = true;
                 Concentrating = true;
                 return new SpiritShroudActivate();

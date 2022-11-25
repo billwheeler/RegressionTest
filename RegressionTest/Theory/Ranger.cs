@@ -173,13 +173,11 @@ namespace RegressionTest
             return new NoAction { Time = BaseAction.ActionTime.BonusAction };
         }
 
-        public override bool OnNewRound()
+        public override void OnNewRound()
         {
-            bool result = base.OnNewRound();
+            base.OnNewRound();
 
             PlanarWarriorUsed = false;
-
-            return result;
         }
 
         public override void OnNewTurn()

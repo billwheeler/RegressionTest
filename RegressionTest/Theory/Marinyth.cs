@@ -24,14 +24,17 @@ namespace RegressionTest
 
             public override void PreHit(BaseCharacter attacker, BaseCharacter target)
             {
+                _ssThisTurn = false;
+
                 base.PreHit(attacker, target);
 
                 if (SharpshooterEnabled)
                 {
-                    if (ShouldPowerAttack(target.AC, 11, 16))
+                    if (ShouldPowerAttack(target.AC, 16, 20))
                     {
                         _ssThisTurn = true;
                         AttackModifier = 6;
+                        parent.Stats.PowerAttacks++;
                     }
                     else
                     {
@@ -103,8 +106,8 @@ namespace RegressionTest
 
                 if (_ssThisTurn)
                 {
-                    parent.Stats.PowerAttacks++;
                     damage += 10;
+                    _ssThisTurn = false;
                 }
 
                 return damage + Modifier;
@@ -165,12 +168,7 @@ namespace RegressionTest
             int total = FirstRound ? 3 : 2;
             FirstRound = false;
 
-            AbilityRoll rollType = AbilityRoll.Normal;
-
-            if (IsHidden)
-                rollType = AbilityRoll.Advantage;
-
-            return new Longbow { Time = BaseAction.ActionTime.Action, parent = this, TotalToRun = total, RollType = rollType };
+            return new Longbow { Time = BaseAction.ActionTime.Action, parent = this, TotalToRun = total };
         }
 
         public override BaseAction PickBonusAction()
@@ -179,6 +177,7 @@ namespace RegressionTest
             {
                 HuntersMarkRunning = true;
                 Concentrating = true;
+                Stats.SpellsUsed++;
                 return new HuntersMarkActivate();
             }
 
@@ -199,7 +198,10 @@ namespace RegressionTest
                 BonusActionFirst = false;
             }
 
-            IsHidden = Dice.D100() <= (FirstRound ? 20 : 2);
+            if (Context.InBrightLight)
+                IsHidden = Dice.D100() <= (FirstRound ? 10 : 1);
+            else
+                IsHidden = Dice.D100() <= (FirstRound ? 40 : 5);
         }
 
         public override void OnFailConcentration()

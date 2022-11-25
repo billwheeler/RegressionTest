@@ -16,7 +16,6 @@ namespace RegressionTest
                 Type = ActionType.MeleeAttack;
                 AttackModifier = 12;
                 Modifier = 6;
-                TotalToRun = 2;
             }
 
             public override int Amount()
@@ -69,6 +68,7 @@ namespace RegressionTest
             HighValueTarget = true;
             IsUndead = true;
             ResistsNonmagical = true;
+            Value = TargetPriority.Highest;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 22, Mod = 6, Save = 6 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 19, Mod = 4, Save = 4 });
@@ -80,22 +80,44 @@ namespace RegressionTest
 
         public override BaseAction PickAction()
         {
-            return new EnervatingFocus();
+            return new EnervatingFocus { TotalToRun = 1 };
         }
 
         public override BaseAction PickBonusAction()
         {
             if (Dice.D6() == 6)
-                return new FingerOfDoom();
+                return new FingerOfDoom { TotalToRun = 1 };
 
-            return new NoAction();
+            return new EnervatingFocus { TotalToRun = 1 };
         }
 
         public override BaseAction PickPreTurn(BaseCharacter target)
         {
-            if (Alive && Dice.D100() <= GetAnnihilatingAuraChance())
+            if (Alive)
             {
-                return new AnnihilatingAura();
+                bool doAura;
+                int chance = 0;
+
+                if (ActiveEffects[SpellEffectType.Turned].Active)
+                    chance = 20;
+
+                if (target.IsObject)
+                    chance = 100;
+
+                if (target.MyType == CreatureType.Summon)
+                    chance = 98;
+
+                if (chance == 100)
+                    doAura = true;
+                else if (chance == 0)
+                    doAura = false;
+                else
+                    doAura = Dice.D100() <= GetAnnihilatingAuraChance();
+
+                if (doAura)
+                {
+                    return new AnnihilatingAura();
+                }
             }
 
             return new NoAction();

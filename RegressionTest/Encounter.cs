@@ -24,6 +24,11 @@ namespace RegressionTest
         public List<int> PreTurnChars = new List<int>();
         public List<int> PostTurnChars = new List<int>();
 
+        public Shuffler shuffler = new Shuffler();
+
+        public bool InBrightLight { get; set; } = true;
+        public bool HasWatchers { get; set; } = false;
+
         public class InitSort : IComparer<BaseCharacter>
         {
             public int Compare(BaseCharacter a, BaseCharacter b)
@@ -61,6 +66,29 @@ namespace RegressionTest
 
                 return 0;
             }
+        }
+
+        public class RankSort : IComparer<TargetRanking>
+        {
+            public int Compare(TargetRanking a, TargetRanking b)
+            {
+                if (a.rank > b.rank)
+                {
+                    return 1;
+                }
+                else if (a.rank < b.rank)
+                {
+                    return -1;
+                }
+
+                return 0;
+            }
+        }
+
+        public class TargetRanking
+        {
+            public int index { get; set; } = -1;
+            public int rank { get; set; } = 0;
         }
 
         public Encounter()
@@ -153,7 +181,10 @@ namespace RegressionTest
                 if (Characters[i].MyType == CreatureType.Summon && !Characters[i].BeenSummoned)
                     continue;
 
-                if (!allowIncapacitated && Characters[i].Incapacitated)
+                if (Characters[i].IsObject)
+                    continue;
+
+                if (!allowIncapacitated && Characters[i].HasUndesirableEffect())
                     continue;
 
                 count++;
@@ -265,66 +296,51 @@ namespace RegressionTest
             }
         }
 
-        private int ClampMax(int max)
-        {
-            IWeightedRandomizer<int> randomizer = new DynamicWeightedRandomizer<int>();
-            for (int i = 0; i < max; i++)
-            {
-                randomizer.Add(i + 1, max - i);
-            }
-
-            return randomizer.NextWithRemoval();
-        }
-
         public List<int> PickEnemies(Team group, int min = 1, int max = 1)
         {
             if (min > max) min = max;
             if (min < 1) min = 1;
 
-            IWeightedRandomizer<int> randomizer = new DynamicWeightedRandomizer<int>();
+            var rank = new List<TargetRanking>();
 
             for (int i = 0; i < Characters.Count; i++)
             {
                 if (Characters[i].Group != group && Characters[i].Alive)
                 {
-                    if (Characters[i].MyType == CreatureType.Summon && !Characters[i].BeenSummoned)
-                        continue;
-
-                    int weight = 5000;
-                    if (Characters[i].HighValueTarget)
-                    {
-                        if (!Characters[i].Incapacitated)
-                            weight = 500000;
-                        else
-                            weight = 1;
-                    }
-                    else if (Characters[i].Incapacitated)
-                    {
-                        weight = 2;
-                    }
-
-                    if (Characters[i].IsHidden)
-                    {
-                        weight = 1;
-                    }
-
-                    randomizer.Add(i, weight);
+                    rank.Add(new TargetRanking { index = i, rank = Characters[i].Rank });
                 }
             }
 
-            List<int> result = new List<int>();
-
-            int total = randomizer.Count;
-
-            if (total > 0)
+            // no targets! bail
+            var result = new List<int>();
+            if (rank.Count == 0)
             {
-                if (max > total) max = total;
-                //if (max > 1) ClampMax(max);
-                if (max > 1) Dice.JustRandom(min, max);
+                return result;
+            }
 
-                for (int j = 0; j < max; j++)
+            // sort!
+            rank.Sort(new RankSort());
+
+            // clamp the max targets we can pick, if need be
+            if (max > rank.Count)
+                max = rank.Count;
+            if (min > max)
+                min = max;
+
+            // one target, pick the top
+            if (max == 1)
+            {
+                result.Add(rank.First().index);
+            }
+
+            // multiple targets, randomly determine how many and pick that amount
+            else
+            {
+                int top = min == max ? min : Dice.JustRandom(min, max);
+
+                for (int i = 0; i < top; i++)
                 {
-                    result.Add(randomizer.NextWithRemoval());
+                    result.Add(rank[i].index);
                 }
             }
 
@@ -367,7 +383,7 @@ namespace RegressionTest
             return -1;
         }
 
-        public BaseCharacter PickRandomTeammate(Team group, int exclude)
+        public BaseCharacter PickRandomTeammate(Team group, int exclude, bool includeSummons = true)
         {
             List<int> candidates = new List<int>();
 
@@ -375,11 +391,18 @@ namespace RegressionTest
             {
                 if (Characters[i].Group == group && Characters[i].Alive && Characters[i].ID != exclude)
                 {
+                    if (!includeSummons && Characters[i].MyType == CreatureType.Summon)
+                        continue;
+
                     candidates.Add(i);
                 }
             }
 
-            if (candidates.Count > 0)
+            if (candidates.Count == 1)
+            {
+                return Characters[candidates.First()];
+            }
+            else if (candidates.Count > 1)
             {
                 return Characters[candidates[Dice.JustRandom(0, candidates.Count - 1)]];
             }
@@ -476,7 +499,7 @@ namespace RegressionTest
                         return false;
                 }
 
-                int damage = 0;
+                int damage = action.Amount();
                 foreach (int enemy in targets)
                 {
                     action.PreHit(Characters[me], Characters[enemy]);
@@ -487,12 +510,11 @@ namespace RegressionTest
 
                     if (hits)
                     {
-                        if (action.Type == BaseAction.ActionType.SpellSave && !action.Damageless)
+                        if (!action.Damageless)
                         {
                             string description = "no damage";
                             string concentration = ".";
 
-                            damage = action.Amount();
                             damage = Characters[enemy].CalculateResistences(damage, action);
                             Characters[me].Stats.DamageGiven += damage;
                             Characters[enemy].Stats.DamageTaken += damage;
@@ -548,6 +570,57 @@ namespace RegressionTest
                     }
                 }
             }
+            else if (action.Type == BaseAction.ActionType.NewRound)
+            {
+                bool survives = true;
+                int damage = action.Amount();
+                string damagePart = ".";
+
+                if (!action.Damageless)
+                {
+                    string description = "no damage";
+                    string concentration = ".";
+
+                    damage = Characters[me].CalculateResistences(damage, action);
+                    Characters[me].Stats.DamageGiven += damage;
+                    Characters[target].Stats.DamageTaken += damage;
+                    survives = Characters[target].TakeDamage(damage);
+
+                    Characters[me].Stats.Attacks++;
+                    if (action.Result == BaseAction.DamageAmount.Full)
+                        Characters[me].Stats.Hits++;
+
+                    if (Characters[target].Concentrating)
+                    {
+                        concentration = Characters[target].ConcentrationCheck(damage) ?
+                            ", maintains concentration." :
+                            ", loses concentration.";
+                    }
+
+                    description = survives ?
+                        string.Format("{0}hp damage", damage) :
+                        string.Format("{0}hp damage, and dies", damage);
+
+                    damagePart = string.Format(" for {0}{1}", description, concentration);
+                }
+
+
+                if (OutputAttacks)
+                {
+                    Console.WriteLine(string.Format("{0} [{1}] - {2} against {3}{4}",
+                        Characters[me].GetNameDesc(),
+                        Characters[me].GetHealthDesc(),
+                        action.Desc,
+                        Characters[target].Name,
+                        damagePart
+                    ));
+                }
+
+                if (!survives)
+                {
+                    Characters[me].Stats.Deaths++;
+                }
+            }
             else if (action.Type != BaseAction.ActionType.None)
             {
                 int enemy;
@@ -564,6 +637,7 @@ namespace RegressionTest
                     List<int> targets = PickEnemies(Characters[me].Group, action.MinTargets, action.MaxTargets);
                     if (targets.Count == 0)
                         return false;
+
                     enemy = targets.First();
                 }
 
@@ -601,6 +675,11 @@ namespace RegressionTest
                             Characters[me].Stats.DamageGiven += damage;
                             Characters[enemy].Stats.DamageTaken += damage;
                             survives = Characters[enemy].TakeDamage(damage);
+
+                            if (survives && action.ApplyEffectAfter != null)
+                            {
+                                survives = ProcessAction(action.ApplyEffectAfter, me, enemy);
+                            }
 
                             if (Characters[enemy].Concentrating)
                             {
@@ -687,8 +766,27 @@ namespace RegressionTest
                 }
 
                 Characters[me].Stats.Rounds++;
-                if (!Characters[me].OnNewRound())
-                    continue;
+
+                foreach (KeyValuePair<SpellEffectType, SpellEffect> entry in Characters[me].ActiveEffects)
+                {
+                    if (entry.Value.Active && entry.Value.NewRoundAction != null)
+                    {
+                        if (result && !ProcessAction(entry.Value.NewRoundAction, GetIndexByID(entry.Value.Owner.ID), me))
+                        {
+                            if (result && OutputAttacks) Console.WriteLine("\n*** Encounter ended *** \n");
+                            result = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (!result && OutputAttacks)
+                {
+                    Console.WriteLine("\n*** Encounter ended *** \n");
+                    break;
+                }
+
+                Characters[me].OnNewRound();
 
                 if (Characters[me].OpportunityAttackChance > 0)
                     OpportunityAttackers.Add(me);
@@ -730,7 +828,7 @@ namespace RegressionTest
                 if (!Characters[me].Alive)
                     continue;
 
-                if (!Characters[me].Incapacitated)
+                if (Characters[me].CanTakeActions() == BaseCharacter.ActionAvailability.Any)
                 {
                     if (Characters[me].BonusActionFirst)
                     {
@@ -785,6 +883,25 @@ namespace RegressionTest
                         }
                     }
                 }
+                else if (Characters[me].CanTakeActions() == BaseCharacter.ActionAvailability.OnlyDodge)
+                {
+                    if (Dice.D100() <= 33)
+                    {
+                        Characters[me].UsedAction = true;
+                        Characters[me].IsDodging = true;
+                        ProcessAction(new DodgeAction(), me);
+                    }
+                    else
+                    {
+                        Characters[me].UsedAction = true;
+                        ProcessAction(new RunsAwayAction(), me);
+                    }
+                }
+                else if (Characters[me].CanTakeActions() == BaseCharacter.ActionAvailability.None)
+                {
+                    Characters[me].UsedAction = true;
+                    ProcessAction(new NothingAction(), me);
+                }
 
                 string endTurn = Characters[me].OnEndTurn();
                 if (OutputAttacks)
@@ -825,7 +942,7 @@ namespace RegressionTest
                     if (!Characters[me].Alive)
                         continue;
 
-                    if (Characters[me].Incapacitated)
+                    if (!Characters[me].CanOpportunityAttack())
                         continue;
 
                     if (Characters[me].UsedReaction)
@@ -838,6 +955,7 @@ namespace RegressionTest
 
                     // pick action
                     BaseAction reAction = Characters[me].PickReaction(true);
+
                     if (reAction.Type != BaseAction.ActionType.None)
                         Characters[me].UsedReaction = true;
 
@@ -901,6 +1019,12 @@ namespace RegressionTest
                     conBlock = $", Con: {c.Stats.Concentration.ToString("0.##")}%";
                 }
 
+                string spellBlock = string.Empty;
+                if (c.Stats.SpellsUsed > 0)
+                {
+                    spellBlock = $", LSpE: {c.Stats.SpellsPerEncounter.ToString("0.##")}";
+                }
+
                 string smiteBlock = string.Empty;
                 if (c.Stats.Smites > 0)
                 {
@@ -913,16 +1037,31 @@ namespace RegressionTest
                     paBlock = $", PA: {c.Stats.PowerAttacksPercentage.ToString("0.##")}%";
                 }
 
-                output += string.Format("{0} - DPR: {1}hp, Acc: {2}%, Mor: {3}%, Av. Rnd: {4}{5}{6}{7}{8} \n",
+                string kiBlock = string.Empty;
+                if (c.Stats.KiUsed > 0)
+                {
+                    kiBlock = $", Ki: {c.Stats.KiPerEncounter.ToString("0.##")}";
+                }
+
+                string ftBlock = string.Empty;
+                if (c.Stats.FeatureDiceUsed > 0)
+                {
+                    ftBlock = $", FT: {c.Stats.FeatureDicePerEncounter.ToString("0.##")}";
+                }
+
+                output += string.Format("{0} - DPR: {1}hp, Acc: {2}%, Mor: {3}%, Av. Rnd: {4}{5}{6}{7}{8}{9}{10}{11} \n",
                     c.Name,
                     c.Stats.DPR.ToString("0.##"),
                     c.Stats.Accuracy.ToString("0.##"),
                     c.Stats.Mortality.ToString("0.##"),
                     c.Stats.AverageRoundsActed.ToString("0.##"),
                     opBlock,
+                    spellBlock,
                     conBlock,
                     smiteBlock,
-                    paBlock
+                    paBlock,
+                    kiBlock,
+                    ftBlock
                 );
             }
 

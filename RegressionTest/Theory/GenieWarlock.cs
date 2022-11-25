@@ -44,8 +44,8 @@ namespace RegressionTest
         public GenieWarlock() : base()
         {
             //Name = "Ketrick";
-            //Name = "Lakrissa";
-            Name = "Tolson";
+            Name = "Lakrissa";
+            //Name = "Tolson";
             AC = 18;
             InitMod = 2;
             Health = 75;
@@ -73,28 +73,28 @@ namespace RegressionTest
             DidBigSpell = false;
         }
 
-        public override bool OnNewRound()
+        public override void OnNewRound()
         {
-            bool result = base.OnNewRound();
+            base.OnNewRound();
 
             DidExtraDamage = false;
-
-            return result;
         }
 
         public override BaseAction PickAction()
         {
             if (!DidBigSpell)
             {
-                /*if (Context.AnyoneHaveEffect(Group, SpellEffectType.SynapticStatic))
+                if (Context.AnyoneHaveEffect(Group, SpellEffectType.SynapticStatic))
                 {
+                    Stats.SpellsUsed++;
                     DidBigSpell = true;
                     Concentrating = true;
                     HypnoticPatternRunning = true;
                     return new HypnoticPattern(17);
                 }
-                else*/
+                else
                 {
+                    Stats.SpellsUsed++;
                     DidBigSpell = true;
                     return new SynapticStatic(17);
                 }

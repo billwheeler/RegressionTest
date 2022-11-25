@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -36,10 +37,13 @@ namespace RegressionTest
 
     public class DiceRoller
     {
-        protected Random Rnd { get; set; } = new Random(DateTime.Now.Millisecond);
+        protected SecureRandom Rnd { get; set; } = new SecureRandom();
 
         public int JustRandom(int min, int max)
         {
+            if (min >= max)
+                throw new Exception("What the shit");
+
             return Rnd.Next(min, max + 1);
         }
 

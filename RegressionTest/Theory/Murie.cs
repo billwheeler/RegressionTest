@@ -9,6 +9,12 @@ namespace RegressionTest
     public class Murie : BaseCharacter
     {
         public bool SpiritGuardiansRunning { get; set; }
+        public bool SpiritualWeaponRunning { get; set; }
+        public bool CanTurn { get; set; } = false;
+        public bool UsedChannelDivinity { get; set; } = false;
+        public bool CastLevelledSpellThisTurn { get; set; } = false;
+
+        public bool ShouldBoomBoom { get; set; } = false;
 
         public class TollOfTheDead : BaseAction
         {
@@ -30,8 +36,6 @@ namespace RegressionTest
 
         public class Warhammer : BaseAction
         {
-            public readonly bool CanUseBoomingBlade = false;
-
             public Murie parent { get; set; }
 
             public Warhammer()
@@ -48,7 +52,31 @@ namespace RegressionTest
             {
                 int damage = Dice.D8(CriticalHit ? 4 : 2);
 
-                if (CanUseBoomingBlade)
+                return damage + Modifier;
+            }
+        }
+
+        public class Mace : BaseAction
+        {
+            public Murie parent { get; set; }
+
+            public Mace()
+            {
+                Desc = "Mace";
+                Type = ActionType.MeleeAttack;
+                Time = ActionTime.Action;
+                AttackModifier = 8;
+                Modifier = 4;
+                IsMagical = true;
+            }
+
+            public override int Amount()
+            {
+                int damage = Dice.D6(CriticalHit ? 2 : 1);
+
+                damage += Dice.D8(CriticalHit ? 2 : 1);
+
+                if (parent.ShouldBoomBoom)
                 {
                     damage += Dice.D8(CriticalHit ? 2 : 1);
                     int percentageEnemyMoves = (Time == ActionTime.Reaction) ? 90 : 25;
@@ -62,37 +90,28 @@ namespace RegressionTest
             }
         }
 
-        public class Mace : BaseAction
+        public class TurnUndead : BaseAction
         {
-            public readonly bool CanUseBoomingBlade = true;
-
-            public Murie parent { get; set; }
-
-            public Mace()
+            public TurnUndead()
             {
-                Desc = "Mace";
-                Type = ActionType.MeleeAttack;
+                Desc = "Turn Undead";
+                Type = ActionType.SpellSave;
                 Time = ActionTime.Action;
-                AttackModifier = 7;
-                Modifier = 3;
+                Ability = AbilityScore.Wisdom;
+                Damageless = true;
+                MinTargets = 2;
+                MaxTargets = 6;
+                DC = 16;
                 IsMagical = true;
-            }
 
-            public override int Amount()
-            {
-                int damage = Dice.D6(CriticalHit ? 4 : 2);
-
-                if (CanUseBoomingBlade)
+                EffectToApply = new SpellEffect
                 {
-                    damage += Dice.D8(CriticalHit ? 2 : 1);
-                    int percentageEnemyMoves = (Time == ActionTime.Reaction) ? 90 : 25;
-                    if (Dice.D100() <= percentageEnemyMoves)
-                    {
-                        damage += Dice.D8(CriticalHit ? 4 : 2);
-                    }
-                }
-
-                return damage + Modifier;
+                    Ability = AbilityScore.Wisdom,
+                    DC = 15,
+                    Name = "Turn Undead",
+                    Type = SpellEffectType.Turned,
+                    SaveType = SpellEffectSave.Never
+                };
             }
         }
 
@@ -159,8 +178,8 @@ namespace RegressionTest
             Name = "Murie";
             AC = 22;
             InitMod = -1;
-            Health = 75;
-            MaxHealth = 75;
+            Health = ShouldBoomBoom ? 75 : 84;
+            MaxHealth = ShouldBoomBoom ? 75 : 84;
             Group = Team.TeamOne;
             Healer = true;
             HealingThreshold = 18;
@@ -169,9 +188,13 @@ namespace RegressionTest
             SpiritGuardiansRunning = false;
             WarCaster = true;
             MyType = CreatureType.PC;
-            OpportunityAttackChance = 20;
+            OpportunityAttackChance = 10;
 
-            Abilities.Add(AbilityScore.Strength, new Stat { Score = 16, Mod = 3, Save = 3 });
+            if (ShouldBoomBoom)
+                Abilities.Add(AbilityScore.Strength, new Stat { Score = 16, Mod = 3, Save = 3 });
+            else
+                Abilities.Add(AbilityScore.Strength, new Stat { Score = 15, Mod = 2, Save = 2 });
+
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 8, Mod = -1, Save = -1 });
             Abilities.Add(AbilityScore.Constitution, new Stat { Score = 16, Mod = 3, Save = 7 });
             Abilities.Add(AbilityScore.Intelligence, new Stat { Score = 10, Mod = 0, Save = 0 });
@@ -183,25 +206,59 @@ namespace RegressionTest
         {
             base.Init();
             SpiritGuardiansRunning = false;
+            SpiritualWeaponRunning = false;
+            UsedChannelDivinity = false;
+        }
+
+        public override void OnNewTurn()
+        {
+            base.OnNewTurn();
+
+            CastLevelledSpellThisTurn = false;
         }
 
         public override BaseAction PickAction()
         {
+            if (!UsedChannelDivinity)
+            {
+                if (CanTurn)
+                {
+                    UsedChannelDivinity = true;
+                    return new TurnUndead();
+                }
+            }
+
             if (!SpiritGuardiansRunning)
             {
                 SpiritGuardiansRunning = true;
                 Concentrating = true;
+                Stats.SpellsUsed++;
+                CastLevelledSpellThisTurn = true;
                 return new SpiritGuardiansActivate();
             }
 
             int rando = Dice.D100();
-            if (rando >= 90)
+            if (ShouldBoomBoom)
             {
-                return new TollOfTheDead();
+                if (rando >= 95)
+                {
+                    return new TollOfTheDead();
+                }
+                else if (rando < 95 && rando >= 35)
+                {
+                    return new Mace { parent = this };
+                }
             }
-            else if (rando < 90 && rando >= 40)
+            else
             {
-                return new Mace { Time = BaseAction.ActionTime.Action, TotalToRun = 1, parent = this };
+                if (rando >= 90)
+                {
+                    return new TollOfTheDead();
+                }
+                else if (rando <= 35)
+                {
+                    return new Mace { parent = this };
+                }
             }
 
             IsDodging = true;
@@ -210,12 +267,21 @@ namespace RegressionTest
 
         public override BaseAction PickBonusAction()
         {
-            if (Healer && HealTarget != null)
+            if (!CastLevelledSpellThisTurn && !SpiritualWeaponRunning)
             {
+                SpiritualWeaponRunning = true;
+                Stats.SpellsUsed++;
+                CastLevelledSpellThisTurn = true;
+                return new SpiritualWeapon();
+            }
+
+            if (!CastLevelledSpellThisTurn && Healer && HealTarget != null)
+            {
+                Stats.SpellsUsed++;
                 return new HealingWord { Modifier = 4, Level = SpellAction.SpellLevel.One };
             }
 
-            if (Dice.D100() <= 90)
+            if (SpiritualWeaponRunning && Dice.D100() <= 90)
             {
                 return new SpiritualWeapon();
             }
@@ -232,7 +298,7 @@ namespace RegressionTest
 
         public override BaseAction PickPreTurn(BaseCharacter target)
         {
-            if (!target.Incapacitated)
+            if (!target.HasUndesirableEffect())
             {
                 if (SpiritGuardiansRunning)
                 {
@@ -249,25 +315,25 @@ namespace RegressionTest
             switch (Context.GetLivingEnemyCount(Group, false))
             {
                 case 1:
-                    return 70;
+                    return 90;
                 case 2:
-                    return 63;
+                    return 81;
                 case 3:
-                    return 56;
+                    return 72;
                 case 4:
-                    return 49;
+                    return 63;
                 case 5:
-                    return 42;
+                    return 54;
                 case 6:
-                    return 35;
+                    return 45;
                 case 7:
-                    return 28;
+                    return 36;
                 case 8:
-                    return 21;
+                    return 27;
                 case 9:
-                    return 14;
+                    return 18;
                 case 10:
-                    return 7;
+                    return 9;
                 default:
                     return 3;
             }
@@ -285,6 +351,7 @@ namespace RegressionTest
             base.OnDeath();
 
             SpiritGuardiansRunning = false;
+            SpiritualWeaponRunning = false;
         }
     }
 }

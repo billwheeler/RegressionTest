@@ -22,6 +22,15 @@ namespace RegressionTest
         High = 3
     }
 
+    public enum TargetPriority
+    {
+        Lowest = 0,
+        Low = 1,
+        Medium = 2,
+        High = 3,
+        Highest = 4
+    }
+
     class Program
     {
         public static bool output = false;
@@ -29,22 +38,41 @@ namespace RegressionTest
 
         public static Encounter shits()
         {
-            bool nightwalker = false;
-            bool useDruid = false;
+            bool nightwalker = true;
+            bool useDruid = true;
             bool shepherd = false;
 
-            Encounter enc = new Encounter { OutputAttacks = output, AllowHealing = true };
+            Encounter enc = new Encounter
+            {
+                InBrightLight = !nightwalker,
+                HasWatchers = false,
+                OutputAttacks = output,
+                AllowHealing = true
+            };
 
-            enc.Add(new Amxikas { CanSpiritShroud = nightwalker ? false : true });
+            //enc.Add(new Tenraja());
+
+            //enc.Add(new Amxikas { CanSpiritShroud = !nightwalker });
+            //enc.Add(new AmxikasRi());
+            enc.Add(new Witchblade());
+            //enc.Add(new Conquest { CanSpiritShroud = !nightwalker, CanConqueringPresense = true });
             //enc.Add(new Rogue());
             //enc.Add(new EldritchKnight());
-            //enc.Add(new HexBard());
-            enc.Add(new Bard());
-            //enc.Add(new Fighter { ShouldRadiantSoul = nightwalker });
-            //enc.Add(new Paladin());
+            //enc.Add(new HexBard { ShouldPhantasmalKiller = nightwalker, ShouldHex = !nightwalker });
+            //enc.Add(new Bard { ShouldPhantasmalKiller = nightwalker });
+
+            //enc.Add(new Fighter());
+            enc.Add(new Paladin
+            {
+                IsWatchers = enc.HasWatchers,
+                CanTurn = enc.HasWatchers && nightwalker ? false : true,
+                CanSpiritShroud = !nightwalker
+            });
+
             enc.Add(new Marinyth { ShouldHuntersMark = true });
-            enc.Add(new Sorcerer());
+            //enc.Add(new Sorcerer());
             //enc.Add(new GenieWarlock());
+            enc.Add(new Bladesinger { ShouldShadowBlade = !enc.InBrightLight });
 
             if (useDruid)
             {
@@ -78,8 +106,8 @@ namespace RegressionTest
             }
             else
             {
-                //enc.Add(new NerfedTwilight());
-                enc.Add(new Murie());
+                //enc.Add(new NerfedTwilight { CanTurn = nightwalker });
+                enc.Add(new Murie { CanTurn = nightwalker, ShouldBoomBoom = false });
                 //enc.Add(new Paladin());
                 //enc.Add(new Fighter());
             }

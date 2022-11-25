@@ -47,7 +47,7 @@ namespace RegressionTest
         public Wight() : base()
         {
             Name = "Wight";
-            AC = 14;
+            AC = 17;
             InitMod = 4;
             Health = 69;
             MaxHealth = 69;
@@ -55,6 +55,7 @@ namespace RegressionTest
             Priority = HealPriority.Medium;
             IsUndead = true;
             ResistsNonmagical = true;
+            Value = TargetPriority.Medium;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 18, Mod = 4, Save = 4 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 14, Mod = 2, Save = 2 });

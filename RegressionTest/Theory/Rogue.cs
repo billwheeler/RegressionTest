@@ -12,7 +12,7 @@ namespace RegressionTest
         {
             public Rogue parent { get; set; }
 
-            private string _desc = "Longbow";
+            private string _desc = "Revenant Blade";
             private bool _saThisTurn = false;
 
             public RevenantBlade()
@@ -61,7 +61,7 @@ namespace RegressionTest
         {
             Name = "Amxikas";
             AC = 17;
-            InitMod = 7 + 4;
+            InitMod = 7;
             Health = 75;
             MaxHealth = 75;
             HealingThreshold = 18;

@@ -9,7 +9,7 @@ namespace RegressionTest
     public class Sorcerer : BaseCharacter
     {
         public int ShieldUses { get; set; } = 0;
-        public bool DidBigSpell { get; set; } = false;
+        public bool SynapticStaticRunning { get; set; } = false;
         public bool HypnoticPatternRunning { get; set; } = false;
         public bool BlackTentaclesRunning { get; set; } = false;
 
@@ -61,7 +61,7 @@ namespace RegressionTest
             base.Init();
 
             ShieldUses = 4;
-            DidBigSpell = false;
+            SynapticStaticRunning = false;
             HypnoticPatternRunning = false;
             BlackTentaclesRunning = false;
         }
@@ -71,32 +71,30 @@ namespace RegressionTest
             base.OnNewEncounter();
 
             ShieldUses = 4;
-            DidBigSpell = false;
+            SynapticStaticRunning = false;
             HypnoticPatternRunning = false;
             BlackTentaclesRunning = false;
         }
 
-        public override bool OnNewRound()
-        {
-            return base.OnNewRound();
-        }
-
         public override BaseAction PickAction()
         {
-            if (!DidBigSpell)
+            //if (!Context.AnyoneHaveEffect(Group, SpellEffectType.Turned))
             {
-                /*if (Context.AnyoneHaveEffect(Group, SpellEffectType.SynapticStatic))
+                if (!SynapticStaticRunning)
                 {
-                    DidBigSpell = true;
-                    Concentrating = true;
-                    HypnoticPatternRunning = true;
-                    return new HypnoticPattern(17);
-                }
-                else*/
-                {
-                    DidBigSpell = true;
+                    Stats.SpellsUsed++;
+                    SynapticStaticRunning = true;
                     return new SynapticStatic(17);
                 }
+            }
+
+            if (!HypnoticPatternRunning)
+            {
+                Stats.SpellsUsed++;
+                Concentrating = true;
+                HypnoticPatternRunning = true;
+                //return new Confusion(17);
+                return new HypnoticPattern(17);
             }
 
             if (Health < 30)
@@ -104,9 +102,10 @@ namespace RegressionTest
 
             if (!Concentrating)
             {
+                Stats.SpellsUsed++;
                 Concentrating = true;
                 BlackTentaclesRunning = true;
-                return new BlackTentacles(17);
+                return new BlackTentacles(this, 17);
             }
 
             return new ScorchingRay(9);
@@ -147,6 +146,7 @@ namespace RegressionTest
 
             if (shouldCastShield)
             {
+                Stats.SpellsUsed++;
                 UsedReaction = true;
                 HasShieldRunning = true;
                 ShieldUses--;

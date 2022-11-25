@@ -112,13 +112,11 @@ namespace RegressionTest
             CastedLeveledSpell = false;
         }
 
-        public override bool OnNewRound()
+        public override void OnNewRound()
         {
-            bool result = base.OnNewRound();
+            base.OnNewRound();
 
             CastedLeveledSpell = false;
-
-            return result;
         }
 
         public override BaseAction PickAction()

@@ -18,6 +18,7 @@ namespace RegressionTest
                 AttackModifier = 7;
                 Modifier = 4;
                 IsMagical = true;
+                TotalToRun = 2;
             }
 
             public override int Amount()
@@ -58,6 +59,7 @@ namespace RegressionTest
             Group = Team.TeamTwo;
             Priority = HealPriority.Medium;
             IsFiend = true;
+            Value = TargetPriority.High;
 
             Abilities.Add(AbilityScore.Strength, new Stat { Score = 18, Mod = 4, Save = 4 });
             Abilities.Add(AbilityScore.Dexterity, new Stat { Score = 15, Mod = 2, Save = 5 });

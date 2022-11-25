@@ -44,7 +44,7 @@ namespace RegressionTest
     {
         public int ID { get; set; } = 0;
         public string Name { get; set; }
-        public int AC { get; set; } = 10;
+        public virtual int AC { get; set; } = 10;
         public int InitMod { get; set; } = 0;
         public int Initiative { get; set; } = 0;
         public int HealingThreshold { get; set; } = 0;
@@ -76,14 +76,17 @@ namespace RegressionTest
         public Dictionary<AbilityScore, Stat> Abilities = new Dictionary<AbilityScore, Stat>();
 
         public bool WarCaster { get; set; } = false;
+        public bool HasElvenAccuracy { get; set; } = false;
         public bool HasAdvantageOnInitiative { get; set; } = false;
         public bool BonusActionFirst { get; set; } = false;
+
+        public TargetPriority Value { get; set; } = TargetPriority.Medium;
 
         public bool HighValueTarget { get; set; } = false;
         public bool IsDodging { get; set; } = false;
         public bool IsHidden { get; set; } = false;
         public bool HasShieldRunning { get; set; } = false;
-
+        public bool HasReactionSave { get; set; } = false;
         public bool GiftOfAlacrity { get; set; } = false;
 
         public Encounter Context { get; set; } = null;
@@ -100,6 +103,8 @@ namespace RegressionTest
         public bool IsUndead { get; set; } = false;
         public bool IsFiend { get; set; } = false;
 
+        public bool IsObject { get; set; } = false;
+
         public bool ResistsNonmagical { get; set; } = false;
         public bool Incapacitated
         {
@@ -110,6 +115,108 @@ namespace RegressionTest
 
                 return false;
             }
+        }
+
+        public int Rank
+        {
+            get
+            {
+                int rank = 50000;
+                switch (Value)
+                {
+                    case TargetPriority.Highest:
+                        rank = 7500;
+                        break;
+                    case TargetPriority.High:
+                        rank = 10000;
+                        break;
+                    case TargetPriority.Medium:
+                        rank = 25000;
+                        break;
+                    case TargetPriority.Low:
+                        rank = 37500;
+                        break;
+                    case TargetPriority.Lowest:
+                        rank = 45000;
+                        break;
+                }
+
+                if (HasUndesirableEffect())
+                    rank += 40000;
+
+                if (Group != Team.TeamOne)
+                    rank -= Initiative * 100;
+
+                return rank;
+            }
+        }
+
+        public enum ActionAvailability
+        {
+            Any = 0,
+            None = 1,
+            OnlyDodge = 2
+        }
+
+        public virtual ActionAvailability CanTakeActions()
+        {
+            if (ActiveEffects[SpellEffectType.HypnoticPattern].Active)
+                return ActionAvailability.None;
+
+            if (ActiveEffects[SpellEffectType.Turned].Active)
+                return ActionAvailability.OnlyDodge;
+
+            if (ActiveEffects[SpellEffectType.Stunned].Active)
+                return ActionAvailability.None;
+
+            if (ActiveEffects[SpellEffectType.PsychicLance].Active)
+                return ActionAvailability.None;
+
+            if (ActiveEffects[SpellEffectType.MindWhip].Active)
+                return ActionAvailability.None;
+
+            if (ActiveEffects[SpellEffectType.Confusion].Active)
+            {
+                return Dice.D10() < 8 ? 
+                    ActionAvailability.None :
+                    ActionAvailability.Any;
+            }
+
+            return ActionAvailability.Any;
+        }
+
+        public virtual bool CanOpportunityAttack()
+        {
+            if (ActiveEffects[SpellEffectType.HypnoticPattern].Active)
+                return false;
+
+            if (ActiveEffects[SpellEffectType.Turned].Active)
+                return false;
+
+            if (ActiveEffects[SpellEffectType.Stunned].Active)
+                return false;
+
+            if (ActiveEffects[SpellEffectType.PsychicLance].Active)
+                return false;
+
+            if (ActiveEffects[SpellEffectType.MindWhip].Active)
+                return false;
+
+            if (ActiveEffects[SpellEffectType.Confusion].Active)
+                return false;
+
+            return true;
+        }
+
+        public bool HasUndesirableEffect()
+        {
+            if (ActiveEffects[SpellEffectType.HypnoticPattern].Active)
+                return true;
+
+            if (ActiveEffects[SpellEffectType.Turned].Active)
+                return true;
+
+            return false;
         }
 
         public BaseCharacter()
@@ -126,7 +233,7 @@ namespace RegressionTest
                 DC = 0,
                 Name = "Bane",
                 Type = SpellEffectType.Bane,
-                SaveAtEndOfRound = true
+                SaveType = SpellEffectSave.EachRound
             });
 
             ActiveEffects.Add(SpellEffectType.Bless, new SpellEffect
@@ -136,7 +243,7 @@ namespace RegressionTest
                 DC = 0,
                 Name = "Bless",
                 Type = SpellEffectType.Bless,
-                SaveAtEndOfRound = false
+                SaveType = SpellEffectSave.Never
             });
 
             ActiveEffects.Add(SpellEffectType.HypnoticPattern, new SpellEffect
@@ -146,7 +253,7 @@ namespace RegressionTest
                 DC = 0,
                 Name = "Hypnotic Pattern",
                 Type = SpellEffectType.HypnoticPattern,
-                SaveAtEndOfRound = false
+                SaveType = SpellEffectSave.Once
             });
 
             ActiveEffects.Add(SpellEffectType.SynapticStatic, new SpellEffect
@@ -156,7 +263,7 @@ namespace RegressionTest
                 DC = 0,
                 Name = "Synaptic Static",
                 Type = SpellEffectType.SynapticStatic,
-                SaveAtEndOfRound = true
+                SaveType = SpellEffectSave.EachRound
             });
 
             ActiveEffects.Add(SpellEffectType.UnsettlingWords, new SpellEffect
@@ -166,7 +273,7 @@ namespace RegressionTest
                 DC = 0,
                 Name = "Unsettling Words",
                 Type = SpellEffectType.UnsettlingWords,
-                SaveAtEndOfRound = false
+                SaveType = SpellEffectSave.EndsAfterOneRound
             });
 
             ActiveEffects.Add(SpellEffectType.Inspired, new SpellEffect
@@ -176,7 +283,7 @@ namespace RegressionTest
                 DC = 0,
                 Name = "Inspired",
                 Type = SpellEffectType.Inspired,
-                SaveAtEndOfRound = false
+                SaveType = SpellEffectSave.Never
             });
 
             ActiveEffects.Add(SpellEffectType.BlackTentacles, new SpellEffect
@@ -186,7 +293,7 @@ namespace RegressionTest
                 DC = 0,
                 Name = "Black Tentacles",
                 Type = SpellEffectType.BlackTentacles,
-                SaveAtEndOfRound = true
+                SaveType = SpellEffectSave.EachRound
             });
 
             ActiveEffects.Add(SpellEffectType.ConqueringPresense, new SpellEffect
@@ -196,7 +303,77 @@ namespace RegressionTest
                 DC = 0,
                 Name = "Conquering Presense",
                 Type = SpellEffectType.ConqueringPresense,
-                SaveAtEndOfRound = true
+                SaveType = SpellEffectSave.EachRound
+            });
+
+            ActiveEffects.Add(SpellEffectType.Bladesong, new SpellEffect
+            {
+                Ability = AbilityScore.Dexterity,
+                Active = false,
+                DC = 0,
+                Name = "Bladesong",
+                Type = SpellEffectType.Bladesong,
+                SaveType = SpellEffectSave.Never
+            });
+
+            ActiveEffects.Add(SpellEffectType.Turned, new SpellEffect
+            {
+                Ability = AbilityScore.Wisdom,
+                Active = false,
+                DC = 0,
+                Name = "Turned",
+                Type = SpellEffectType.Turned,
+                SaveType = SpellEffectSave.Once
+            });
+
+            ActiveEffects.Add(SpellEffectType.Stunned, new SpellEffect
+            {
+                Ability = AbilityScore.Constitution,
+                Active = false,
+                DC = 0,
+                Name = "Stunned",
+                Type = SpellEffectType.Stunned,
+                SaveType = SpellEffectSave.EachRound
+            });
+
+            ActiveEffects.Add(SpellEffectType.PsychicLance, new SpellEffect
+            {
+                Ability = AbilityScore.Intelligence,
+                Active = false,
+                DC = 0,
+                Name = "Psychic Lance",
+                Type = SpellEffectType.PsychicLance,
+                SaveType = SpellEffectSave.EndsAfterOneRound
+            });
+
+            ActiveEffects.Add(SpellEffectType.MindWhip, new SpellEffect
+            {
+                Ability = AbilityScore.Intelligence,
+                Active = false,
+                DC = 0,
+                Name = "Mind Whip",
+                Type = SpellEffectType.MindWhip,
+                SaveType = SpellEffectSave.EndsAfterOneRound
+            });
+
+            ActiveEffects.Add(SpellEffectType.Confusion, new SpellEffect
+            {
+                Ability = AbilityScore.Wisdom,
+                Active = false,
+                DC = 0,
+                Name = "Confusion",
+                Type = SpellEffectType.Confusion,
+                SaveType = SpellEffectSave.EachRound
+            });
+
+            ActiveEffects.Add(SpellEffectType.PhantasmalKiller, new SpellEffect
+            {
+                Ability = AbilityScore.Wisdom,
+                Active = false,
+                DC = 0,
+                Name = "Phantasmal Killer",
+                Type = SpellEffectType.PhantasmalKiller,
+                SaveType = SpellEffectSave.EachRound
             });
         }
 
@@ -229,10 +406,13 @@ namespace RegressionTest
             }
         }
 
-        public virtual void ApplyEffect(SpellEffect effect)
+        public virtual void ApplyEffect(SpellEffect effect, BaseCharacter owner)
         {
             ActiveEffects[effect.Type].Active = true;
             ActiveEffects[effect.Type].DC = effect.DC;
+            ActiveEffects[effect.Type].Owner = owner;
+            ActiveEffects[effect.Type].Ability = effect.Ability;
+            ActiveEffects[effect.Type].NewRoundAction = effect.NewRoundAction;
         }
 
         public virtual void RollInitiative()
@@ -249,7 +429,13 @@ namespace RegressionTest
                 if (GiftOfAlacrity)
                     bonus += Dice.D8(1);
 
-                Initiative = Dice.MakeAbilityRoll(HasAdvantageOnInitiative ? AbilityRoll.Advantage : AbilityRoll.Normal) + InitMod + bonus;
+                if (Context.HasWatchers)
+                    bonus += Proficiency;
+
+                Initiative = Dice.MakeAbilityRoll(HasAdvantageOnInitiative ?
+                    HasElvenAccuracy ? AbilityRoll.ElvenAccuracy : AbilityRoll.Advantage :
+                    AbilityRoll.Normal) + 
+                    InitMod + bonus;
             }
             Stats.Encounters++;
         }
@@ -272,7 +458,7 @@ namespace RegressionTest
             }
         }
 
-        public bool SavingThrow(AbilityScore score, int dc, AbilityRoll rollType = AbilityRoll.Normal)
+        public bool SavingThrow(AbilityScore score, int dc, AbilityRoll rollType = AbilityRoll.Normal, bool isConcentration = false)
         {
             if (Abilities.ContainsKey(score))
             {
@@ -312,6 +498,11 @@ namespace RegressionTest
                     roll += Dice.D8();
                 }
 
+                if (isConcentration && ActiveEffects[SpellEffectType.Bladesong].Active)
+                {
+                    roll += 5;
+                }
+
                 return roll >= dc;
             }
 
@@ -329,7 +520,9 @@ namespace RegressionTest
             int dc = (int)Math.Floor(amount / 2.0f);
             if (dc < 10) dc = 10;
 
-            bool result = SavingThrow(AbilityScore.Constitution, dc, WarCaster ? AbilityRoll.Advantage : AbilityRoll.Normal);
+            bool result = SavingThrow(AbilityScore.Constitution, dc, WarCaster ?
+                HasElvenAccuracy ? AbilityRoll.ElvenAccuracy : AbilityRoll.Advantage : 
+                AbilityRoll.Normal, true);
             if (!result)
             {
                 OnFailConcentration();
@@ -365,6 +558,11 @@ namespace RegressionTest
             if (amount > 0 && ActiveEffects[SpellEffectType.HypnoticPattern].Active)
             {
                 ActiveEffects[SpellEffectType.HypnoticPattern].Active = false;
+            }
+
+            if (amount > 0 && ActiveEffects[SpellEffectType.Turned].Active)
+            {
+                ActiveEffects[SpellEffectType.Turned].Active = false;
             }
 
             if (TempHitPoints > 0)
@@ -426,6 +624,9 @@ namespace RegressionTest
             if (IsHidden)
                 nameDesc += " (hidden)";
 
+            if (ActiveEffects[SpellEffectType.Turned].Active)
+                nameDesc += " (turnt)";
+
             if (ActiveEffects[SpellEffectType.HypnoticPattern].Active)
                 nameDesc += " (hypnotized)";
 
@@ -434,6 +635,15 @@ namespace RegressionTest
 
             if (ActiveEffects[SpellEffectType.ConqueringPresense].Active)
                 nameDesc += " (fear)";
+
+            if (ActiveEffects[SpellEffectType.Stunned].Active)
+                nameDesc += " (stunned)";
+
+            if (ActiveEffects[SpellEffectType.Confusion].Active)
+                nameDesc += " (confused)";
+
+            if (ActiveEffects[SpellEffectType.PhantasmalKiller].Active)
+                nameDesc += " (pk)";
 
             return nameDesc;
         }
@@ -456,29 +666,18 @@ namespace RegressionTest
             return 0;
         }
 
-        public virtual bool OnNewRound()
+        public virtual void OnNewRound()
         {
             IsDodging = false;
             UsedAction = false;
             UsedBonusAction = false;
             UsedReaction = false;
-
-            if (ActiveEffects[SpellEffectType.BlackTentacles].Active)
-            {
-                return TakeDamage(Dice.D6(3));
-            }
-
-            if (ActiveEffects[SpellEffectType.ConqueringPresense].Active)
-            {
-                return TakeDamage(4);
-            }
-
-            return true;
         }
 
         public virtual void OnNewTurn()
         {
             HasShieldRunning = false;
+            HasReactionSave = false;
         }
 
         public string OnEndTurn()
@@ -489,16 +688,24 @@ namespace RegressionTest
             {
                 SpellEffect effect = kvp.Value;
 
-                if (effect.SaveAtEndOfRound && effect.Active)
+                if (effect.Active)
                 {
-                    if (SavingThrow(effect.Ability, effect.DC))
+                    if (effect.SaveType == SpellEffectSave.EachRound)
                     {
-                        output = $"{Name} [{GetHealthDesc()}] made save against {effect.Name}, effect ended.";
-                        ActiveEffects[effect.Type].Active = false;
+                        if (SavingThrow(effect.Ability, effect.DC))
+                        {
+                            output = $"{Name} [{GetHealthDesc()}] made save against {effect.Name}, effect ended.";
+                            ActiveEffects[effect.Type].Active = false;
+                        }
+                        else
+                        {
+                            output = $"{Name} [{GetHealthDesc()}] failed save against {effect.Name}, effect remains.";
+                        }
                     }
-                    else
+                    else if (effect.SaveType == SpellEffectSave.EndsAfterOneRound)
                     {
-                        output = $"{Name} [{GetHealthDesc()}] failed save against {effect.Name}, effect remains.";
+                        output = $"{Name} [{GetHealthDesc()}] has {effect.Name} effect end.";
+                        ActiveEffects[effect.Type].Active = false;
                     }
                 }
             }
@@ -515,6 +722,7 @@ namespace RegressionTest
         {
             Concentrating = false;
             HasShieldRunning = false;
+            HasReactionSave = false;
         }
 
         public virtual BaseAction PickAction()
